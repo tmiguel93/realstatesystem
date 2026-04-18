@@ -1,0 +1,27 @@
+{
+  "name": "imobiliaria-saas",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c cyan,magenta \"npm run dev --workspace @imobiliaria/api\" \"npm run dev --workspace @imobiliaria/web\"",
+    "dev:api": "npm run dev --workspace @imobiliaria/api",
+    "dev:web": "npm run dev --workspace @imobiliaria/web",
+    "build": "npm run build --workspace @imobiliaria/shared && npm run build --workspace @imobiliaria/api && npm run build --workspace @imobiliaria/web",
+    "lint": "npm run lint --workspace @imobiliaria/api && npm run lint --workspace @imobiliaria/web",
+    "db:generate": "npx prisma generate --config prisma.config.ts",
+    "db:push": "npx prisma db push --config prisma.config.ts",
+    "db:migrate": "npx prisma migrate dev --config prisma.config.ts",
+    "db:seed": "npm run prisma:seed --workspace @imobiliaria/api",
+    "postinstall": "npm run build --workspace @imobiliaria/shared"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "prisma": "^7.7.0",
+    "typescript": "^5.9.3"
+  }
+}
+

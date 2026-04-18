@@ -1,0 +1,735 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  LOCKED
+}
+
+enum PersonType {
+  INDIVIDUAL
+  COMPANY
+}
+
+enum PropertyType {
+  APARTMENT
+  HOUSE
+  COMMERCIAL
+  LAND
+  PENTHOUSE
+  WAREHOUSE
+  RURAL
+  OTHER
+}
+
+enum PropertyPurpose {
+  SALE
+  RENT
+  BOTH
+}
+
+enum PropertyStatus {
+  AVAILABLE
+  RESERVED
+  RENTED
+  SOLD
+  UNDER_MAINTENANCE
+  INACTIVE
+}
+
+enum CommercialSituation {
+  AVAILABLE_FOR_SALE
+  AVAILABLE_FOR_RENT
+  AVAILABLE_FOR_BOTH
+  SALE_IN_NEGOTIATION
+  RENT_IN_NEGOTIATION
+  RENTED
+  SOLD
+  INACTIVE
+}
+
+enum LeadSource {
+  WEBSITE
+  PORTAL
+  INDICATION
+  WALK_IN
+  WHATSAPP
+  INSTAGRAM
+  FACEBOOK
+  PHONE
+  OTHER
+}
+
+enum LeadStatus {
+  OPEN
+  WON
+  LOST
+  ARCHIVED
+}
+
+enum SaleLeadStage {
+  NEW_LEAD
+  CONTACT_STARTED
+  INTEREST_CONFIRMED
+  VISIT_SCHEDULED
+  PROPOSAL_SENT
+  NEGOTIATION
+  DOCUMENTATION
+  CLOSED
+  LOST
+}
+
+enum RentLeadStage {
+  NEW_LEAD
+  CONTACT_STARTED
+  INTEREST_CONFIRMED
+  VISIT_SCHEDULED
+  PROFILE_ANALYSIS
+  PROPOSAL
+  DOCUMENTATION
+  CONTRACT_GENERATED
+  SIGNATURE_PENDING
+  ACTIVE
+  LOST
+}
+
+enum VisitStatus {
+  SCHEDULED
+  CONFIRMED
+  COMPLETED
+  NO_SHOW
+  CANCELLED
+}
+
+enum VisitOutcome {
+  INTERESTED
+  NEEDS_FOLLOW_UP
+  PROPOSAL_REQUESTED
+  DISCARDED
+  NO_DECISION
+}
+
+enum KeyStatus {
+  AVAILABLE
+  CHECKED_OUT
+  COPY
+  UNDER_MAINTENANCE
+  BLOCKED
+  LOST
+}
+
+enum KeyAction {
+  CHECKOUT
+  CHECKIN
+  STATUS_CHANGE
+  MAINTENANCE_START
+  MAINTENANCE_END
+  OVERRIDE
+}
+
+enum HolderType {
+  INTERNAL_USER
+  CLIENT
+  OWNER
+  THIRD_PARTY
+}
+
+enum ScoreStatus {
+  NOT_ANALYZED
+  APPROVED
+  RESTRICTED
+  REJECTED
+  UNDER_REVIEW
+}
+
+enum ContractOriginType {
+  RENT_PIPELINE
+  MANUAL
+}
+
+enum ContractStatus {
+  DRAFT
+  UNDER_REVIEW
+  PENDING_SIGNATURE
+  ACTIVE
+  RENEWED
+  TERMINATED
+  CANCELLED
+  EXPIRED
+}
+
+enum GuaranteeType {
+  NONE
+  SECURITY_DEPOSIT
+  GUARANTOR
+  INSURANCE
+  TITLE_CAPITALIZATION
+  OTHER
+}
+
+enum AdjustmentIndex {
+  IPCA
+  IGP_M
+  INPC
+  FIXED
+  OTHER
+}
+
+enum ContractVersionStatus {
+  DRAFT
+  REVIEWED
+  FINALIZED
+  CANCELLED
+}
+
+enum AuditEntityType {
+  AUTH
+  USER
+  ROLE
+  PERMISSION
+  OWNER
+  TENANT
+  PROPERTY
+  PROPERTY_KEY
+  KEY_CONTROL
+  SALE_LEAD
+  RENT_LEAD
+  VISIT
+  CONTRACT
+  CONTRACT_VERSION
+  DOCUMENT
+  NOTIFICATION
+}
+
+enum DocumentCategory {
+  PROPERTY_PHOTO
+  OWNER_DOCUMENT
+  TENANT_DOCUMENT
+  LEAD_ATTACHMENT
+  CONTRACT_ATTACHMENT
+  CONTRACT_PDF
+  GENERAL
+}
+
+enum NotificationType {
+  CONTRACT_EXPIRING
+  KEY_OVERDUE
+  VISIT_REMINDER
+  PIPELINE_TASK
+  SYSTEM_ALERT
+  SECURITY_ALERT
+}
+
+enum NotificationSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+model User {
+  id                       String               @id @default(uuid()) @db.Uuid
+  fullName                 String               @db.VarChar(150)
+  email                    String               @unique @db.VarChar(150)
+  passwordHash             String               @db.VarChar(255)
+  phone                    String?              @db.VarChar(30)
+  status                   UserStatus           @default(ACTIVE)
+  mustChangePassword       Boolean              @default(false)
+  lastLoginAt              DateTime?
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
+  roles                    UserRole[]
+  refreshTokens            RefreshToken[]
+  passwordResetTokens      PasswordResetToken[]
+  createdSaleLeads         SaleLead[]           @relation("SaleLeadCreatedBy")
+  responsibleSaleLeads     SaleLead[]           @relation("SaleLeadResponsible")
+  createdRentLeads         RentLead[]           @relation("RentLeadCreatedBy")
+  responsibleRentLeads     RentLead[]           @relation("RentLeadResponsible")
+  brokerVisits             Visit[]              @relation("VisitBroker")
+  createdVisits            Visit[]              @relation("VisitCreatedBy")
+  keyControls              KeyControl[]         @relation("KeyControlResponsibleUser")
+  createdContracts         Contract[]           @relation("ContractCreatedBy")
+  createdContractVersions  ContractVersion[]    @relation("ContractVersionCreatedBy")
+  reviewedContractVersions ContractVersion[]    @relation("ContractVersionReviewedBy")
+  uploadedDocuments        Document[]           @relation("DocumentUploadedBy")
+  notifications            Notification[]
+  auditLogs                AuditLog[]           @relation("AuditActor")
+
+  @@index([status])
+}
+
+model Role {
+  id          String           @id @default(uuid()) @db.Uuid
+  code        String           @unique @db.VarChar(50)
+  name        String           @db.VarChar(100)
+  description String?          @db.Text
+  isSystem    Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  users       UserRole[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String           @id @default(uuid()) @db.Uuid
+  code        String           @unique @db.VarChar(120)
+  resource    String           @db.VarChar(80)
+  action      String           @db.VarChar(80)
+  description String?          @db.Text
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  roles       RolePermission[]
+
+  @@index([resource, action])
+}
+
+model UserRole {
+  userId     String   @db.Uuid
+  roleId     String   @db.Uuid
+  assignedAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+}
+
+model RolePermission {
+  roleId       String     @db.Uuid
+  permissionId String     @db.Uuid
+  grantedAt    DateTime   @default(now())
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+}
+
+model RefreshToken {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  tokenHash  String   @unique @db.VarChar(255)
+  ipAddress  String?  @db.VarChar(64)
+  userAgent  String?  @db.VarChar(255)
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model PasswordResetToken {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  tokenHash  String   @unique @db.VarChar(255)
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model Owner {
+  id                 String      @id @default(uuid()) @db.Uuid
+  personType         PersonType
+  fullName           String      @db.VarChar(150)
+  document           String      @unique @db.VarChar(20)
+  email              String?     @db.VarChar(150)
+  phone              String?     @db.VarChar(30)
+  secondaryPhone     String?     @db.VarChar(30)
+  zipCode            String?     @db.VarChar(12)
+  state              String?     @db.VarChar(2)
+  city               String?     @db.VarChar(100)
+  district           String?     @db.VarChar(100)
+  street             String?     @db.VarChar(150)
+  streetNumber       String?     @db.VarChar(20)
+  complement         String?     @db.VarChar(120)
+  bankName           String?     @db.VarChar(100)
+  bankBranch         String?     @db.VarChar(30)
+  bankAccount        String?     @db.VarChar(30)
+  pixKey             String?     @db.VarChar(120)
+  notes              String?     @db.Text
+  isActive           Boolean     @default(true)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  properties         Property[]
+  contracts          Contract[]  @relation("ContractOwner")
+  documents          Document[]  @relation("DocumentOwner")
+
+  @@index([fullName])
+  @@index([isActive])
+}
+
+model Tenant {
+  id                 String       @id @default(uuid()) @db.Uuid
+  fullName           String       @db.VarChar(150)
+  document           String       @unique @db.VarChar(20)
+  email              String?      @db.VarChar(150)
+  phone              String?      @db.VarChar(30)
+  secondaryPhone     String?      @db.VarChar(30)
+  zipCode            String?      @db.VarChar(12)
+  state              String?      @db.VarChar(2)
+  city               String?      @db.VarChar(100)
+  district           String?      @db.VarChar(100)
+  street             String?      @db.VarChar(150)
+  streetNumber       String?      @db.VarChar(20)
+  complement         String?      @db.VarChar(120)
+  scoreStatus        ScoreStatus  @default(NOT_ANALYZED)
+  scoreValue         Int?
+  notes              String?      @db.Text
+  isActive           Boolean      @default(true)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  rentLeads          RentLead[]
+  contracts          Contract[]   @relation("ContractTenant")
+  documents          Document[]   @relation("DocumentTenant")
+
+  @@index([fullName])
+  @@index([scoreStatus])
+  @@index([isActive])
+}
+
+model Property {
+  id                  String               @id @default(uuid()) @db.Uuid
+  code                String               @unique @db.VarChar(40)
+  title               String               @db.VarChar(150)
+  type                PropertyType
+  purpose             PropertyPurpose
+  status              PropertyStatus       @default(AVAILABLE)
+  commercialSituation CommercialSituation  @default(AVAILABLE_FOR_BOTH)
+  ownerId             String               @db.Uuid
+  zipCode             String               @db.VarChar(12)
+  state               String               @db.VarChar(2)
+  city                String               @db.VarChar(100)
+  district            String               @db.VarChar(100)
+  street              String               @db.VarChar(150)
+  streetNumber        String               @db.VarChar(20)
+  complement          String?              @db.VarChar(120)
+  description         String?              @db.Text
+  internalNotes       String?              @db.Text
+  salePrice           Decimal?             @db.Decimal(14, 2)
+  rentPrice           Decimal?             @db.Decimal(14, 2)
+  condoFee            Decimal?             @db.Decimal(14, 2)
+  iptu                Decimal?             @db.Decimal(14, 2)
+  areaTotal           Decimal?             @db.Decimal(10, 2)
+  areaBuilt           Decimal?             @db.Decimal(10, 2)
+  bedrooms            Int?
+  bathrooms           Int?
+  suites              Int?
+  parkingSpots        Int?
+  floor               Int?
+  furnished           Boolean              @default(false)
+  acceptsPet          Boolean?
+  isPublished         Boolean              @default(false)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  owner               Owner                @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  saleLeads           SaleLead[]
+  rentLeads           RentLead[]
+  visits              Visit[]
+  propertyKeys        PropertyKey[]
+  keyControls         KeyControl[]
+  contracts           Contract[]           @relation("ContractProperty")
+  documents           Document[]           @relation("DocumentProperty")
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([purpose])
+  @@index([commercialSituation])
+  @@index([city, district])
+}
+
+model PropertyKey {
+  id                    String        @id @default(uuid()) @db.Uuid
+  propertyId            String        @db.Uuid
+  identifier            String        @db.VarChar(40)
+  description           String?       @db.Text
+  isCopy                Boolean       @default(false)
+  currentStatus         KeyStatus     @default(AVAILABLE)
+  currentHolderType     HolderType?
+  currentHolderName     String?       @db.VarChar(150)
+  currentHolderDocument String?       @db.VarChar(20)
+  lastCheckoutAt        DateTime?
+  lastCheckinAt         DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  property              Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  controls              KeyControl[]
+
+  @@unique([propertyId, identifier])
+  @@index([propertyId, currentStatus])
+}
+
+model KeyControl {
+  id               String      @id @default(uuid()) @db.Uuid
+  propertyKeyId    String      @db.Uuid
+  propertyId       String      @db.Uuid
+  responsibleUserId String?    @db.Uuid
+  action           KeyAction
+  previousStatus   KeyStatus?
+  resultingStatus  KeyStatus
+  holderType       HolderType?
+  holderName       String?     @db.VarChar(150)
+  holderDocument   String?     @db.VarChar(20)
+  checkoutAt       DateTime?
+  expectedReturnAt DateTime?
+  returnedAt       DateTime?
+  notes            String?     @db.Text
+  overrideReason   String?     @db.Text
+  createdAt        DateTime    @default(now())
+  propertyKey      PropertyKey @relation(fields: [propertyKeyId], references: [id], onDelete: Cascade)
+  property         Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  responsibleUser  User?       @relation("KeyControlResponsibleUser", fields: [responsibleUserId], references: [id], onDelete: SetNull)
+
+  @@index([propertyKeyId, createdAt])
+  @@index([propertyId, createdAt])
+  @@index([responsibleUserId])
+}
+
+model SaleLead {
+  id                String        @id @default(uuid()) @db.Uuid
+  code              String        @unique @db.VarChar(40)
+  pipelineStage     SaleLeadStage @default(NEW_LEAD)
+  status            LeadStatus    @default(OPEN)
+  source            LeadSource?
+  customerName      String        @db.VarChar(150)
+  customerEmail     String?       @db.VarChar(150)
+  customerPhone     String?       @db.VarChar(30)
+  customerDocument  String?       @db.VarChar(20)
+  desiredRegion     String?       @db.VarChar(120)
+  budgetMin         Decimal?      @db.Decimal(14, 2)
+  budgetMax         Decimal?      @db.Decimal(14, 2)
+  notes             String?       @db.Text
+  lossReason        String?       @db.Text
+  lastContactAt     DateTime?
+  nextFollowUpAt    DateTime?
+  propertyId        String?       @db.Uuid
+  responsibleUserId String        @db.Uuid
+  createdByUserId   String        @db.Uuid
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  closedAt          DateTime?
+  property          Property?     @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  responsibleUser   User          @relation("SaleLeadResponsible", fields: [responsibleUserId], references: [id], onDelete: Restrict)
+  createdByUser     User          @relation("SaleLeadCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  visits            Visit[]
+  documents         Document[]    @relation("DocumentSaleLead")
+
+  @@index([pipelineStage])
+  @@index([status])
+  @@index([responsibleUserId])
+  @@index([propertyId])
+}
+
+model RentLead {
+  id                 String         @id @default(uuid()) @db.Uuid
+  code               String         @unique @db.VarChar(40)
+  pipelineStage      RentLeadStage  @default(NEW_LEAD)
+  status             LeadStatus     @default(OPEN)
+  source             LeadSource?
+  customerName       String         @db.VarChar(150)
+  customerEmail      String?        @db.VarChar(150)
+  customerPhone      String?        @db.VarChar(30)
+  customerDocument   String?        @db.VarChar(20)
+  desiredRegion      String?        @db.VarChar(120)
+  monthlyBudget      Decimal?       @db.Decimal(14, 2)
+  guaranteePreference GuaranteeType?
+  notes              String?        @db.Text
+  lossReason         String?        @db.Text
+  lastContactAt      DateTime?
+  nextFollowUpAt     DateTime?
+  propertyId         String?        @db.Uuid
+  tenantId           String?        @db.Uuid
+  responsibleUserId  String         @db.Uuid
+  createdByUserId    String         @db.Uuid
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  closedAt           DateTime?
+  property           Property?      @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  tenant             Tenant?        @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  responsibleUser    User           @relation("RentLeadResponsible", fields: [responsibleUserId], references: [id], onDelete: Restrict)
+  createdByUser      User           @relation("RentLeadCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  visits             Visit[]
+  contracts          Contract[]     @relation("ContractRentLead")
+  documents          Document[]     @relation("DocumentRentLead")
+
+  @@index([pipelineStage])
+  @@index([status])
+  @@index([responsibleUserId])
+  @@index([propertyId])
+  @@index([tenantId])
+}
+
+model Visit {
+  id              String        @id @default(uuid()) @db.Uuid
+  propertyId      String        @db.Uuid
+  saleLeadId      String?       @db.Uuid
+  rentLeadId      String?       @db.Uuid
+  brokerUserId    String        @db.Uuid
+  createdByUserId String        @db.Uuid
+  scheduledAt     DateTime
+  completedAt     DateTime?
+  status          VisitStatus   @default(SCHEDULED)
+  outcome         VisitOutcome?
+  notes           String?       @db.Text
+  resultSummary   String?       @db.Text
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  property        Property      @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  saleLead        SaleLead?     @relation(fields: [saleLeadId], references: [id], onDelete: SetNull)
+  rentLead        RentLead?     @relation(fields: [rentLeadId], references: [id], onDelete: SetNull)
+  broker          User          @relation("VisitBroker", fields: [brokerUserId], references: [id], onDelete: Restrict)
+  createdByUser   User          @relation("VisitCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@index([propertyId])
+  @@index([saleLeadId])
+  @@index([rentLeadId])
+  @@index([brokerUserId])
+  @@index([scheduledAt, status])
+}
+
+model Contract {
+  id                        String            @id @default(uuid()) @db.Uuid
+  code                      String            @unique @db.VarChar(40)
+  originType                ContractOriginType
+  status                    ContractStatus    @default(DRAFT)
+  rentLeadId                String?           @db.Uuid
+  propertyId                String            @db.Uuid
+  ownerId                   String            @db.Uuid
+  tenantId                  String            @db.Uuid
+  createdByUserId           String            @db.Uuid
+  startDate                 DateTime
+  endDate                   DateTime
+  rentAmount                Decimal           @db.Decimal(14, 2)
+  dueDay                    Int
+  guaranteeType             GuaranteeType
+  guaranteeDetails          String?           @db.Text
+  adjustmentIndex           AdjustmentIndex
+  adjustmentFrequencyMonths Int               @default(12)
+  lateFeePercentage         Decimal?          @db.Decimal(5, 2)
+  penaltyDescription        String?           @db.Text
+  responsibilities          Json?
+  additionalClauses         String?           @db.Text
+  legalWarningAcknowledgedAt DateTime?
+  activatedAt               DateTime?
+  terminatedAt              DateTime?
+  terminationReason         String?           @db.Text
+  createdAt                 DateTime          @default(now())
+  updatedAt                 DateTime          @updatedAt
+  rentLead                  RentLead?         @relation("ContractRentLead", fields: [rentLeadId], references: [id], onDelete: SetNull)
+  property                  Property          @relation("ContractProperty", fields: [propertyId], references: [id], onDelete: Restrict)
+  owner                     Owner             @relation("ContractOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  tenant                    Tenant            @relation("ContractTenant", fields: [tenantId], references: [id], onDelete: Restrict)
+  createdByUser             User              @relation("ContractCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  versions                  ContractVersion[]
+  documents                 Document[]        @relation("DocumentContract")
+
+  @@index([status])
+  @@index([propertyId])
+  @@index([ownerId])
+  @@index([tenantId])
+  @@index([rentLeadId])
+  @@index([endDate, status])
+}
+
+model ContractVersion {
+  id                String                @id @default(uuid()) @db.Uuid
+  contractId        String                @db.Uuid
+  versionNumber     Int
+  status            ContractVersionStatus @default(DRAFT)
+  templateName      String                @db.VarChar(100)
+  templateVersion   String                @db.VarChar(40)
+  renderedHtml      String                @db.Text
+  renderedText      String?               @db.Text
+  dataSnapshot      Json
+  pdfFileUrl        String?               @db.VarChar(500)
+  reviewedByUserId  String?               @db.Uuid
+  reviewedAt        DateTime?
+  createdByUserId   String                @db.Uuid
+  createdAt         DateTime              @default(now())
+  contract          Contract              @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  reviewedByUser    User?                 @relation("ContractVersionReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  createdByUser     User                  @relation("ContractVersionCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@unique([contractId, versionNumber])
+  @@index([status])
+  @@index([reviewedByUserId])
+}
+
+model AuditLog {
+  id          String          @id @default(uuid()) @db.Uuid
+  actorUserId String?         @db.Uuid
+  action      String          @db.VarChar(120)
+  entityType  AuditEntityType
+  entityId    String          @db.VarChar(120)
+  description String          @db.Text
+  metadata    Json?
+  ipAddress   String?         @db.VarChar(64)
+  userAgent   String?         @db.VarChar(255)
+  createdAt   DateTime        @default(now())
+  actorUser   User?           @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([actorUserId])
+  @@index([createdAt])
+}
+
+model Document {
+  id               String            @id @default(uuid()) @db.Uuid
+  name             String            @db.VarChar(180)
+  fileUrl          String            @db.VarChar(500)
+  mimeType         String            @db.VarChar(120)
+  sizeBytes        Int
+  category         DocumentCategory
+  propertyId       String?           @db.Uuid
+  ownerId          String?           @db.Uuid
+  tenantId         String?           @db.Uuid
+  contractId       String?           @db.Uuid
+  saleLeadId       String?           @db.Uuid
+  rentLeadId       String?           @db.Uuid
+  uploadedByUserId String            @db.Uuid
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  property         Property?         @relation("DocumentProperty", fields: [propertyId], references: [id], onDelete: SetNull)
+  owner            Owner?            @relation("DocumentOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  tenant           Tenant?           @relation("DocumentTenant", fields: [tenantId], references: [id], onDelete: SetNull)
+  contract         Contract?         @relation("DocumentContract", fields: [contractId], references: [id], onDelete: SetNull)
+  saleLead         SaleLead?         @relation("DocumentSaleLead", fields: [saleLeadId], references: [id], onDelete: SetNull)
+  rentLead         RentLead?         @relation("DocumentRentLead", fields: [rentLeadId], references: [id], onDelete: SetNull)
+  uploadedByUser   User              @relation("DocumentUploadedBy", fields: [uploadedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([category])
+  @@index([propertyId])
+  @@index([ownerId])
+  @@index([tenantId])
+  @@index([contractId])
+  @@index([saleLeadId])
+  @@index([rentLeadId])
+}
+
+model Notification {
+  id         String               @id @default(uuid()) @db.Uuid
+  userId     String               @db.Uuid
+  type       NotificationType
+  severity   NotificationSeverity @default(INFO)
+  title      String               @db.VarChar(160)
+  message    String               @db.Text
+  entityType AuditEntityType?
+  entityId   String?              @db.VarChar(120)
+  scheduledFor DateTime?
+  sentAt     DateTime?
+  readAt     DateTime?
+  createdAt  DateTime             @default(now())
+  user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([type, severity])
+  @@index([scheduledFor])
+}

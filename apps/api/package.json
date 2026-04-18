@@ -1,0 +1,44 @@
+{
+  "name": "@imobiliaria/api",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "predev": "prisma generate --config ../../prisma.config.ts",
+    "dev": "tsx watch src/main.ts",
+    "prebuild": "prisma generate --config ../../prisma.config.ts",
+    "build": "tsup src/main.ts --format cjs --target node20 --sourcemap --clean --out-dir dist --external @prisma/client",
+    "start": "node dist/main.js",
+    "lint": "tsc --noEmit",
+    "prisma:seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@imobiliaria/shared": "1.0.0",
+    "@prisma/adapter-pg": "^7.7.0",
+    "@prisma/client": "^7.7.0",
+    "@types/pdfkit": "^0.17.6",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "pdfkit": "^0.18.0",
+    "pg": "^8.16.3",
+    "pino": "^10.1.0",
+    "pino-http": "^11.0.0",
+    "pino-pretty": "^13.1.2",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.6.2",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
