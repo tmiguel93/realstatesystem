@@ -179,7 +179,7 @@ export function PropertyDetailPage() {
 
       <SectionCard title="Chaves cadastradas">
         <div className="overflow-x-auto">
-          <table className="min-w-full text-left">
+              <table className="data-table">
             <thead>
               <tr className="border-b border-ink-200 text-xs uppercase tracking-[0.18em] text-ink-400">
                 <th className="pb-3">Identificador</th>

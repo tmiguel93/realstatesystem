@@ -125,7 +125,7 @@ export function SalesPage() {
               setSelectedLead(null);
               setDrawerOpen(true);
             }}
-            className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-ink-950 transition hover:bg-sand-50"
+            className="secondary-button"
           >
             Novo lead
           </button>
@@ -154,12 +154,12 @@ export function SalesPage() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Buscar por codigo, cliente, telefone ou email"
-            className="rounded-2xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-900 outline-none transition focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            className="filter-control"
           />
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
-            className="rounded-2xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-900 outline-none transition focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            className="filter-control"
           >
             <option value="">Todos os status</option>
             {leadStatusOptions.map((option) => (
@@ -171,7 +171,7 @@ export function SalesPage() {
           <select
             value={responsibleFilter}
             onChange={(event) => setResponsibleFilter(event.target.value)}
-            className="rounded-2xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-900 outline-none transition focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            className="filter-control"
           >
             <option value="">Todos os responsaveis</option>
             {responsibleOptions.map((option) => (

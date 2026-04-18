@@ -65,7 +65,7 @@ export function ContractsPage() {
             <button
               type="button"
               onClick={() => navigate(appRoutes.contractGenerator)}
-              className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-ink-950 transition hover:bg-sand-50"
+            className="secondary-button"
             >
               Gerar contrato
             </button>
@@ -98,7 +98,7 @@ export function ContractsPage() {
               setPage(1);
             }}
             placeholder="Buscar por codigo, imovel, locador ou locatario"
-            className="rounded-2xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-900 outline-none transition focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            className="filter-control"
           />
           <select
             value={statusFilter}
@@ -106,7 +106,7 @@ export function ContractsPage() {
               setStatusFilter(event.target.value);
               setPage(1);
             }}
-            className="rounded-2xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-900 outline-none transition focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            className="filter-control"
           >
             <option value="">Todos os status</option>
             {contractStatusOptions.map((option: { value: string; label: string }) => (
@@ -238,7 +238,7 @@ export function ContractsPage() {
               <button
                 type="button"
                 onClick={() => navigate(appRoutes.contractGenerator)}
-                className="rounded-2xl bg-ink-950 px-5 py-3 text-sm font-semibold text-white"
+                className="primary-button"
               >
                 Gerar primeiro contrato
               </button>

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 
 type StatCardProps = {
@@ -10,9 +11,14 @@ type StatCardProps = {
 
 export function StatCard({ label, value, detail, icon }: StatCardProps) {
   return (
-    <article className="group rounded-[28px] border border-white/50 bg-white/80 p-5 shadow-soft backdrop-blur-xl transition hover:-translate-y-0.5 hover:shadow-[0_20px_60px_-30px_rgba(24,57,48,0.45)]">
+    <motion.article
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+      className="group panel-card"
+    >
       <div className="mb-4 flex items-center justify-between">
-        <div className="grid size-12 place-items-center rounded-2xl bg-ink-950 text-white shadow-soft">
+        <div className="grid size-12 place-items-center rounded-2xl bg-gradient-to-br from-ink-950 to-brand-700 text-white shadow-[0_18px_34px_-24px_rgba(24,57,48,0.65)]">
           {icon}
         </div>
         <ArrowUpRight
@@ -23,7 +29,6 @@ export function StatCard({ label, value, detail, icon }: StatCardProps) {
       <p className="text-sm text-ink-500">{label}</p>
       <p className="mt-2 font-display text-4xl text-ink-950">{value}</p>
       <p className="mt-3 text-sm text-ink-500">{detail}</p>
-    </article>
+    </motion.article>
   );
 }
-

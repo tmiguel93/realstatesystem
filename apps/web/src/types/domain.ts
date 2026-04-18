@@ -606,6 +606,201 @@ export type ContractDetail = {
   };
 };
 
+export type MaintenanceTicketListItem = {
+  id: string;
+  ticketId: string;
+  title: string;
+  description: string;
+  type: string;
+  urgencyLevel: number;
+  urgencyLabel: string;
+  status: string;
+  statusLabel: string;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt: string | null;
+  finishedAt: string | null;
+  openDays: number;
+  daysWithoutUpdate: number;
+  slaDueAt: string;
+  isOverdue: boolean;
+  property: {
+    id: string;
+    code: string;
+    title: string;
+    addressSummary: string;
+    ownerName: string;
+  };
+  tenant: {
+    id: string;
+    fullName: string;
+  } | null;
+  openedByUser: {
+    id: string;
+    fullName: string;
+  };
+  assignedToUser: {
+    id: string;
+    fullName: string;
+  } | null;
+  historyCount: number;
+  attachmentCount: number;
+};
+
+export type MaintenanceTicketDetail = MaintenanceTicketListItem & {
+  internalNotes: string | null;
+  resolutionSummary: string | null;
+  cancelReason: string | null;
+  lastStatusChangeAt: string;
+  property: MaintenanceTicketListItem["property"] & {
+    street: string;
+    streetNumber: string;
+    district: string;
+    city: string;
+    state: string;
+    owner: {
+      id: string;
+      fullName: string;
+      document: string;
+      phone: string | null;
+      email: string | null;
+    };
+  };
+  tenant: {
+    id: string;
+    fullName: string;
+    document: string;
+    phone: string | null;
+    email: string | null;
+  } | null;
+  openedByUser: {
+    id: string;
+    fullName: string;
+    email: string;
+  };
+  assignedToUser: {
+    id: string;
+    fullName: string;
+    email: string;
+  } | null;
+  attachments: Array<{
+    id: string;
+    name: string;
+    fileUrl: string;
+    mimeType: string;
+    sizeBytes: number;
+    createdAt: string;
+  }>;
+  history: Array<{
+    id: string;
+    actionType: string;
+    description: string;
+    oldValue: unknown;
+    newValue: unknown;
+    createdAt: string;
+    user: {
+      id: string;
+      fullName: string;
+    } | null;
+  }>;
+  metrics: {
+    historyCount: number;
+    attachmentCount: number;
+  };
+};
+
+export type MaintenancePropertyContext = {
+  property: {
+    id: string;
+    code: string;
+    title: string;
+    addressSummary: string;
+  };
+  owner: {
+    id: string;
+    fullName: string;
+  };
+  activeTenant: {
+    id: string;
+    fullName: string;
+  } | null;
+};
+
+export type MaintenanceKanbanResponse = {
+  filtersApplied: Record<string, unknown>;
+  columns: Array<{
+    status: string;
+    label: string;
+    items: MaintenanceTicketListItem[];
+  }>;
+};
+
+export type MaintenanceDashboard = {
+  indicators: {
+    totalOpen: number;
+    inProgress: number;
+    resolved: number;
+    finished: number;
+    cancelled: number;
+    overdueCount: number;
+    averageResolutionHours: number;
+  };
+  charts: {
+    status: Array<{
+      key: string;
+      label: string;
+      value: number;
+    }>;
+    urgency: Array<{
+      key: string;
+      label: string;
+      value: number;
+    }>;
+    types: Array<{
+      key: string;
+      label: string;
+      value: number;
+    }>;
+    evolution: Array<{
+      date: string;
+      open: number;
+      inProgress: number;
+      finished: number;
+    }>;
+    averageResolutionByUrgency: Array<{
+      key: string;
+      label: string;
+      value: number;
+    }>;
+  };
+  byProperty: Array<{
+    key: string;
+    label: string;
+    value: number;
+  }>;
+  criticalTickets: MaintenanceTicketListItem[];
+  refreshedAt: string;
+};
+
+export type AppNotification = {
+  id: string;
+  type: string;
+  severity: string;
+  title: string;
+  message: string;
+  entityType: string | null;
+  entityId: string | null;
+  scheduledFor: string | null;
+  sentAt: string | null;
+  readAt: string | null;
+  createdAt: string;
+};
+
+export type AppNotificationsResponse = {
+  unreadCount: number;
+  items: AppNotification[];
+};
+
 export type PaginatedOwners = PaginatedResponse<OwnerListItem>;
 export type PaginatedTenants = PaginatedResponse<TenantListItem>;
 export type PaginatedProperties = PaginatedResponse<PropertyListItem>;
@@ -615,3 +810,5 @@ export type PaginatedRentLeads = PaginatedResponse<RentLeadListItem>;
 export type PaginatedVisits = PaginatedResponse<VisitListItem>;
 export type PaginatedPropertyKeys = PaginatedResponse<PropertyKeyListItem>;
 export type PaginatedContracts = PaginatedResponse<ContractListItem>;
+export type PaginatedMaintenanceTickets =
+  PaginatedResponse<MaintenanceTicketListItem>;

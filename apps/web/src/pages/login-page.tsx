@@ -147,8 +147,8 @@ export function LoginPage() {
             </form>
 
             <div className="mt-8 rounded-[24px] bg-sand-50 p-4 text-sm text-ink-600">
-              Ambiente inicial da FASE 2 pronto para autenticacao, layout base e
-              controle de acesso.
+              Ambiente protegido com autenticacao segura, controle de acesso e
+              experiencia administrativa desenhada para operacao profissional.
             </div>
           </div>
         </section>
@@ -156,4 +156,3 @@ export function LoginPage() {
     </div>
   );
 }
-

@@ -445,7 +445,7 @@ export function ContractGeneratorForm({
           <button
             type="submit"
             disabled={pending}
-            className="rounded-2xl bg-ink-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60"
+            className="primary-button disabled:opacity-60"
           >
             {pending
               ? "Gerando..."

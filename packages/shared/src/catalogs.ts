@@ -134,6 +134,55 @@ export const holderTypeOptions = [
   { value: "THIRD_PARTY", label: "Terceiro" },
 ] as const;
 
+export const maintenanceTicketTypeOptions = [
+  { value: "STRUCTURAL", label: "Estrutural" },
+  { value: "INTERNAL", label: "Interno" },
+  { value: "EXTERNAL", label: "Externo" },
+  { value: "HYDRAULIC", label: "Hidraulico" },
+  { value: "ELECTRICAL", label: "Eletrico" },
+  { value: "ROOFING", label: "Telhado / Cobertura" },
+  { value: "LEAKAGE", label: "Infiltracao / Vazamento" },
+  { value: "SEWAGE", label: "Esgoto / Drenagem" },
+  { value: "PAINTING", label: "Pintura / Acabamento" },
+  { value: "DOORS_WINDOWS", label: "Portas / Janelas" },
+  { value: "LOCKS_SECURITY", label: "Fechadura / Seguranca" },
+  { value: "HVAC", label: "Climatizacao / Ar-condicionado / Ventilacao" },
+  { value: "GAS", label: "Gas" },
+  { value: "PEST_CONTROL", label: "Pragas / Dedetizacao" },
+  { value: "LANDSCAPING", label: "Paisagismo / Area externa" },
+  { value: "TECHNICAL_CLEANING", label: "Limpeza tecnica" },
+  { value: "EQUIPMENT", label: "Equipamentos / Eletrodomesticos vinculados ao imovel" },
+  { value: "FIXED_FURNITURE", label: "Mobiliario fixo" },
+  { value: "PREVENTIVE", label: "Preventiva" },
+  { value: "CORRECTIVE", label: "Corretiva" },
+  { value: "EMERGENCY", label: "Emergencial" },
+  { value: "OTHER", label: "Outros" },
+] as const;
+
+export const maintenanceTicketStatusOptions = [
+  { value: "OPEN", label: "Aberto" },
+  { value: "TRIAGE", label: "Triagem" },
+  { value: "WAITING_APPROVAL", label: "Aguardando aprovacao" },
+  { value: "WAITING_PROVIDER", label: "Aguardando prestador" },
+  { value: "IN_PROGRESS", label: "Em andamento" },
+  { value: "WAITING_MATERIAL", label: "Aguardando material" },
+  { value: "RESOLVED", label: "Resolvido" },
+  { value: "FINISHED", label: "Finalizado" },
+  { value: "CANCELLED", label: "Cancelado" },
+] as const;
+
+export const maintenanceKanbanStatusOptions = maintenanceTicketStatusOptions.filter(
+  (item) => item.value !== "CANCELLED",
+);
+
+export const maintenanceUrgencyOptions = [
+  { value: "1", label: "1 - Baixa" },
+  { value: "2", label: "2 - Moderada" },
+  { value: "3", label: "3 - Alta" },
+  { value: "4", label: "4 - Muito alta" },
+  { value: "5", label: "5 - Urgentissimo" },
+] as const;
+
 export const guaranteeTypeOptions = [
   { value: "NONE", label: "Sem garantia" },
   { value: "SECURITY_DEPOSIT", label: "Caucao" },
@@ -215,5 +264,8 @@ export const permissionLabels = {
   "contracts.generate": "Geracao de contratos",
   "contracts.review": "Revisao de contratos",
   "contracts.export": "Exportacao de contratos",
+  "maintenance.read": "Leitura de chamados de manutencao",
+  "maintenance.write": "Edicao de chamados de manutencao",
+  "maintenance.override": "Override de manutencao",
   "audit.read": "Auditoria",
 } as const;

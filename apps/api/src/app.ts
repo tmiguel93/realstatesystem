@@ -9,6 +9,8 @@ import { authRouter } from "./modules/auth/auth.routes";
 import { contractsRouter } from "./modules/contracts/contracts.routes";
 import { dashboardRouter } from "./modules/dashboard/dashboard.routes";
 import { keysRouter } from "./modules/keys/keys.routes";
+import { maintenanceRouter } from "./modules/maintenance/maintenance.routes";
+import { notificationsRouter } from "./modules/notifications/notifications.routes";
 import { ownersRouter } from "./modules/owners/owners.routes";
 import { propertiesRouter } from "./modules/properties/properties.routes";
 import { rentLeadsRouter } from "./modules/rent-leads/rent-leads.routes";
@@ -51,6 +53,8 @@ export function createApp() {
   app.use("/api/rent-leads", rentLeadsRouter);
   app.use("/api/visits", visitsRouter);
   app.use("/api/keys", keysRouter);
+  app.use("/api/maintenance-tickets", maintenanceRouter);
+  app.use("/api/notifications", notificationsRouter);
   app.use("/api/contracts", contractsRouter);
   app.use("/api/users", usersRouter);
   app.use("/api/roles", rolesRouter);

@@ -82,7 +82,7 @@ export function KeyCheckinDrawer({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-2xl border border-ink-200 bg-white px-4 py-3 text-sm font-semibold text-ink-700"
+            className="secondary-button"
           >
             Cancelar
           </button>
@@ -90,7 +90,7 @@ export function KeyCheckinDrawer({
             type="submit"
             form="key-checkin-form"
             disabled={pending}
-            className="rounded-2xl bg-ink-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60"
+            className="primary-button disabled:opacity-60"
           >
             {pending ? "Registrando..." : "Registrar devolucao"}
           </button>

@@ -11,6 +11,11 @@ import { ContractGeneratorPage } from "@/pages/contract-generator-page";
 import { ContractsPage } from "@/pages/contracts-page";
 import { ForbiddenPage } from "@/pages/forbidden-page";
 import { KeysPage } from "@/pages/keys-page";
+import { MaintenanceDashboardPage } from "@/pages/maintenance-dashboard-page";
+import { MaintenanceKanbanPage } from "@/pages/maintenance-kanban-page";
+import { MaintenanceTicketDetailPage } from "@/pages/maintenance-ticket-detail-page";
+import { MaintenanceTicketNewPage } from "@/pages/maintenance-ticket-new-page";
+import { MaintenanceTicketsPage } from "@/pages/maintenance-tickets-page";
 import { OwnerDetailPage } from "@/pages/owner-detail-page";
 import { OwnersPage } from "@/pages/owners-page";
 import { PlaceholderPage } from "@/pages/placeholder-page";
@@ -101,6 +106,46 @@ const router = createBrowserRouter([
             element: (
               <PermissionGuard permissions={[permissionCodes.KEYS_READ]}>
                 <KeysPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: appRoutes.maintenanceDashboard,
+            element: (
+              <PermissionGuard permissions={[permissionCodes.MAINTENANCE_READ]}>
+                <MaintenanceDashboardPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: appRoutes.maintenanceTickets,
+            element: (
+              <PermissionGuard permissions={[permissionCodes.MAINTENANCE_READ]}>
+                <MaintenanceTicketsPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: appRoutes.maintenanceTicketNew,
+            element: (
+              <PermissionGuard permissions={[permissionCodes.MAINTENANCE_WRITE]}>
+                <MaintenanceTicketNewPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: appRoutes.maintenanceTicketDetail,
+            element: (
+              <PermissionGuard permissions={[permissionCodes.MAINTENANCE_READ]}>
+                <MaintenanceTicketDetailPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: appRoutes.maintenanceKanban,
+            element: (
+              <PermissionGuard permissions={[permissionCodes.MAINTENANCE_READ]}>
+                <MaintenanceKanbanPage />
               </PermissionGuard>
             ),
           },

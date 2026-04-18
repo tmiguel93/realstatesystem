@@ -27,6 +27,10 @@ export function resolveStatusTone(status: string) {
       "UNDER_MAINTENANCE",
       "DRAFT",
       "PENDING_SIGNATURE",
+      "TRIAGE",
+      "WAITING_APPROVAL",
+      "WAITING_PROVIDER",
+      "WAITING_MATERIAL",
       "REVIEWED",
     ].includes(
       normalizedStatus,
@@ -43,14 +47,20 @@ export function resolveStatusTone(status: string) {
       "SOLD",
       "RENTED",
       "LOST",
-      "TERMINATED",
       "CANCELLED",
+      "TERMINATED",
       "EXPIRED",
     ].includes(
       normalizedStatus,
     )
   ) {
     return "danger" as const;
+  }
+
+  if (
+    ["OPEN", "IN_PROGRESS", "RESOLVED"].includes(normalizedStatus)
+  ) {
+    return "brand" as const;
   }
 
   return "neutral" as const;

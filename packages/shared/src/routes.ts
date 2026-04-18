@@ -8,6 +8,11 @@ export const appRoutes = {
   rentLeadDetail: "/locacoes/:leadId",
   visits: "/agenda/visitas",
   keys: "/chaves",
+  maintenanceDashboard: "/manutencao/dashboard",
+  maintenanceTickets: "/manutencao/chamados",
+  maintenanceTicketNew: "/manutencao/chamados/novo",
+  maintenanceTicketDetail: "/manutencao/chamados/:ticketId",
+  maintenanceKanban: "/manutencao/kanban",
   contracts: "/contratos",
   contractDetail: "/contratos/:contractId",
   contractGenerator: "/contratos/gerador",
@@ -21,4 +26,3 @@ export const appRoutes = {
   settings: "/configuracoes",
   forbidden: "/403",
 } as const;
-

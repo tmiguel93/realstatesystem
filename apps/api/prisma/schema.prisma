@@ -188,6 +188,56 @@ enum ContractVersionStatus {
   CANCELLED
 }
 
+enum MaintenanceTicketType {
+  STRUCTURAL
+  INTERNAL
+  EXTERNAL
+  HYDRAULIC
+  ELECTRICAL
+  ROOFING
+  LEAKAGE
+  SEWAGE
+  PAINTING
+  DOORS_WINDOWS
+  LOCKS_SECURITY
+  HVAC
+  GAS
+  PEST_CONTROL
+  LANDSCAPING
+  TECHNICAL_CLEANING
+  EQUIPMENT
+  FIXED_FURNITURE
+  PREVENTIVE
+  CORRECTIVE
+  EMERGENCY
+  OTHER
+}
+
+enum MaintenanceTicketStatus {
+  OPEN
+  TRIAGE
+  WAITING_APPROVAL
+  WAITING_PROVIDER
+  IN_PROGRESS
+  WAITING_MATERIAL
+  RESOLVED
+  FINISHED
+  CANCELLED
+}
+
+enum MaintenanceTicketHistoryActionType {
+  OPENED
+  DETAILS_UPDATED
+  STATUS_CHANGED
+  ASSIGNED
+  URGENCY_CHANGED
+  INTERNAL_NOTE_UPDATED
+  RESOLUTION_ADDED
+  CANCELLED
+  ATTACHMENT_ADDED
+  NOTIFICATION_TRIGGERED
+}
+
 enum AuditEntityType {
   AUTH
   USER
@@ -203,6 +253,8 @@ enum AuditEntityType {
   VISIT
   CONTRACT
   CONTRACT_VERSION
+  MAINTENANCE_TICKET
+  MAINTENANCE_TICKET_HISTORY
   DOCUMENT
   NOTIFICATION
 }
@@ -214,6 +266,7 @@ enum DocumentCategory {
   LEAD_ATTACHMENT
   CONTRACT_ATTACHMENT
   CONTRACT_PDF
+  MAINTENANCE_ATTACHMENT
   GENERAL
 }
 
@@ -222,6 +275,7 @@ enum NotificationType {
   KEY_OVERDUE
   VISIT_REMINDER
   PIPELINE_TASK
+  MAINTENANCE_SLA
   SYSTEM_ALERT
   SECURITY_ALERT
 }
@@ -257,6 +311,9 @@ model User {
   createdContractVersions  ContractVersion[]    @relation("ContractVersionCreatedBy")
   reviewedContractVersions ContractVersion[]    @relation("ContractVersionReviewedBy")
   uploadedDocuments        Document[]           @relation("DocumentUploadedBy")
+  openedMaintenanceTickets MaintenanceTicket[]  @relation("MaintenanceTicketOpenedBy")
+  assignedMaintenanceTickets MaintenanceTicket[] @relation("MaintenanceTicketAssignedTo")
+  maintenanceTicketHistoryEntries MaintenanceTicketHistory[] @relation("MaintenanceTicketHistoryUser")
   notifications            Notification[]
   auditLogs                AuditLog[]           @relation("AuditActor")
 
@@ -389,6 +446,7 @@ model Tenant {
   updatedAt          DateTime     @updatedAt
   rentLeads          RentLead[]
   contracts          Contract[]   @relation("ContractTenant")
+  maintenanceTickets MaintenanceTicket[]
   documents          Document[]   @relation("DocumentTenant")
 
   @@index([fullName])
@@ -437,6 +495,7 @@ model Property {
   propertyKeys        PropertyKey[]
   keyControls         KeyControl[]
   contracts           Contract[]           @relation("ContractProperty")
+  maintenanceTickets  MaintenanceTicket[]
   documents           Document[]           @relation("DocumentProperty")
 
   @@index([ownerId])
@@ -663,6 +722,67 @@ model ContractVersion {
   @@index([reviewedByUserId])
 }
 
+model MaintenanceTicket {
+  id                 String                    @id @default(uuid()) @db.Uuid
+  ticketId           String                    @unique @db.VarChar(40)
+  propertyId         String                    @db.Uuid
+  tenantId           String?                   @db.Uuid
+  openedByUserId     String                    @db.Uuid
+  assignedToUserId   String?                   @db.Uuid
+  title              String                    @db.VarChar(180)
+  description        String                    @db.Text
+  type               MaintenanceTicketType
+  urgencyLevel       Int
+  status             MaintenanceTicketStatus   @default(OPEN)
+  propertyCodeSnapshot String                  @db.VarChar(40)
+  propertyTitleSnapshot String                 @db.VarChar(180)
+  addressSnapshot    String                    @db.VarChar(220)
+  ownerNameSnapshot  String                    @db.VarChar(150)
+  tenantNameSnapshot String?                   @db.VarChar(150)
+  lastStatusChangeAt DateTime                  @default(now())
+  lastNotificationAt DateTime?
+  lastNotificationDate DateTime?
+  resolutionSummary  String?                   @db.Text
+  cancelReason       String?                   @db.Text
+  internalNotes      String?                   @db.Text
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  resolvedAt         DateTime?
+  finishedAt         DateTime?
+  property           Property                  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  tenant             Tenant?                   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  openedByUser       User                      @relation("MaintenanceTicketOpenedBy", fields: [openedByUserId], references: [id], onDelete: Restrict)
+  assignedToUser     User?                     @relation("MaintenanceTicketAssignedTo", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  history            MaintenanceTicketHistory[]
+  documents          Document[]                @relation("DocumentMaintenanceTicket")
+
+  @@index([ticketId])
+  @@index([propertyId])
+  @@index([tenantId])
+  @@index([openedByUserId])
+  @@index([assignedToUserId])
+  @@index([status, createdAt])
+  @@index([type])
+  @@index([urgencyLevel])
+}
+
+model MaintenanceTicketHistory {
+  id                  String                              @id @default(uuid()) @db.Uuid
+  maintenanceTicketId String                              @db.Uuid
+  userId              String?                             @db.Uuid
+  actionType          MaintenanceTicketHistoryActionType
+  description         String                              @db.Text
+  oldValue            Json?
+  newValue            Json?
+  createdAt           DateTime                            @default(now())
+  maintenanceTicket   MaintenanceTicket                   @relation(fields: [maintenanceTicketId], references: [id], onDelete: Cascade)
+  user                User?                               @relation("MaintenanceTicketHistoryUser", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([maintenanceTicketId, createdAt])
+  @@index([userId])
+  @@index([actionType])
+}
+
 model AuditLog {
   id          String          @id @default(uuid()) @db.Uuid
   actorUserId String?         @db.Uuid
@@ -694,6 +814,7 @@ model Document {
   contractId       String?           @db.Uuid
   saleLeadId       String?           @db.Uuid
   rentLeadId       String?           @db.Uuid
+  maintenanceTicketId String?        @db.Uuid
   uploadedByUserId String            @db.Uuid
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -703,6 +824,7 @@ model Document {
   contract         Contract?         @relation("DocumentContract", fields: [contractId], references: [id], onDelete: SetNull)
   saleLead         SaleLead?         @relation("DocumentSaleLead", fields: [saleLeadId], references: [id], onDelete: SetNull)
   rentLead         RentLead?         @relation("DocumentRentLead", fields: [rentLeadId], references: [id], onDelete: SetNull)
+  maintenanceTicket MaintenanceTicket? @relation("DocumentMaintenanceTicket", fields: [maintenanceTicketId], references: [id], onDelete: SetNull)
   uploadedByUser   User              @relation("DocumentUploadedBy", fields: [uploadedByUserId], references: [id], onDelete: Restrict)
 
   @@index([category])
@@ -712,6 +834,7 @@ model Document {
   @@index([contractId])
   @@index([saleLeadId])
   @@index([rentLeadId])
+  @@index([maintenanceTicketId])
 }
 
 model Notification {

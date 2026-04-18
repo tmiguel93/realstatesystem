@@ -30,6 +30,9 @@ export const permissionCodes = {
   CONTRACTS_GENERATE: "contracts.generate",
   CONTRACTS_REVIEW: "contracts.review",
   CONTRACTS_EXPORT: "contracts.export",
+  MAINTENANCE_READ: "maintenance.read",
+  MAINTENANCE_WRITE: "maintenance.write",
+  MAINTENANCE_OVERRIDE: "maintenance.override",
   AUDIT_READ: "audit.read",
 } as const;
 
@@ -55,10 +58,11 @@ export const operationalPermissions: PermissionCode[] = [
   permissionCodes.KEYS_READ,
   permissionCodes.KEYS_WRITE,
   permissionCodes.CONTRACTS_READ,
+  permissionCodes.MAINTENANCE_READ,
+  permissionCodes.MAINTENANCE_WRITE,
 ];
 
 export const rolePermissionMap: Record<RoleCode, PermissionCode[]> = {
   [roleCodes.MASTER_ADMIN]: allPermissions,
   [roleCodes.USER_OPERACIONAL]: operationalPermissions,
 };
-

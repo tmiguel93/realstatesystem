@@ -91,7 +91,7 @@ export function TenantsPage() {
               setSelectedTenant(null);
               setDrawerOpen(true);
             }}
-            className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-ink-950 transition hover:bg-sand-50"
+            className="secondary-button"
           >
             Novo locatario
           </button>
@@ -123,7 +123,7 @@ export function TenantsPage() {
               setPage(1);
             }}
             placeholder="Buscar por nome, documento ou email"
-            className="rounded-2xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-900 outline-none transition focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            className="filter-control"
           />
           <select
             value={statusFilter}
@@ -131,7 +131,7 @@ export function TenantsPage() {
               setStatusFilter(event.target.value);
               setPage(1);
             }}
-            className="rounded-2xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-900 outline-none transition focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            className="filter-control"
           >
             <option value="">Todos os status</option>
             <option value="true">Ativos</option>
@@ -143,7 +143,7 @@ export function TenantsPage() {
               setScoreFilter(event.target.value);
               setPage(1);
             }}
-            className="rounded-2xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-900 outline-none transition focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            className="filter-control"
           >
             <option value="">Todos os scores</option>
             {scoreStatusOptions.map((option) => (
@@ -157,7 +157,7 @@ export function TenantsPage() {
         {tenantsQuery.data?.data.length ? (
           <div className="space-y-4">
             <div className="overflow-x-auto">
-              <table className="min-w-full text-left">
+              <table className="data-table">
                 <thead>
                   <tr className="border-b border-ink-200 text-xs uppercase tracking-[0.18em] text-ink-400">
                     <th className="pb-3">Locatario</th>
@@ -243,7 +243,7 @@ export function TenantsPage() {
                   setSelectedTenant(null);
                   setDrawerOpen(true);
                 }}
-                className="rounded-2xl bg-ink-950 px-5 py-3 text-sm font-semibold text-white"
+                className="primary-button"
               >
                 Cadastrar locatario
               </button>

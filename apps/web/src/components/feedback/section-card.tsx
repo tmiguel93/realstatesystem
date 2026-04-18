@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import type { PropsWithChildren, ReactNode } from "react";
 
 type SectionCardProps = PropsWithChildren<{
@@ -13,7 +14,14 @@ export function SectionCard({
   children,
 }: SectionCardProps) {
   return (
-    <section className="rounded-[30px] border border-white/50 bg-white/80 p-6 shadow-soft backdrop-blur-xl">
+    <motion.section
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+      className="panel-card relative overflow-hidden"
+    >
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-200/80 to-transparent" />
+
       {title || description || actions ? (
         <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -24,12 +32,11 @@ export function SectionCard({
               <p className="mt-1 text-sm text-ink-500">{description}</p>
             ) : null}
           </div>
-          {actions ? <div>{actions}</div> : null}
+          {actions ? <div className="shrink-0">{actions}</div> : null}
         </div>
       ) : null}
 
       {children}
-    </section>
+    </motion.section>
   );
 }
-
