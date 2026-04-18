@@ -16,6 +16,7 @@ import { ResetPasswordDrawer } from "@/features/users/reset-password-drawer";
 import { UserFormDrawer } from "@/features/users/user-form-drawer";
 import { formatDateTime } from "@/lib/format";
 import { resolveStatusTone } from "@/lib/status";
+import { tenantsService } from "@/services/tenants-service";
 import { usersService } from "@/services/users-service";
 import type { UserDetail, UserListItem } from "@/types/domain";
 
@@ -51,6 +52,17 @@ export function UsersPage() {
     enabled: Boolean(accessToken),
   });
 
+  const tenantsQuery = useQuery({
+    queryKey: ["tenant-options"],
+    queryFn: () =>
+      tenantsService.list({
+        accessToken: accessToken!,
+        page: 1,
+        pageSize: 100,
+      }),
+    enabled: Boolean(accessToken),
+  });
+
   const usersQuery = useQuery({
     queryKey: ["users", page, deferredSearch, statusFilter, roleFilter],
     queryFn: () =>
@@ -75,7 +87,7 @@ export function UsersPage() {
     mutationFn: (payload: Parameters<typeof usersService.create>[1]) =>
       usersService.create(accessToken!, payload),
     onSuccess: async (result: UserListItem) => {
-      toast.success("Usuario cadastrado com sucesso.");
+      toast.success("Usuário cadastrado com sucesso.");
       setFormOpen(false);
       setEditingUser(null);
       setSelectedUserId(result.id);
@@ -88,7 +100,7 @@ export function UsersPage() {
     mutationFn: (payload: Parameters<typeof usersService.update>[2]) =>
       usersService.update(accessToken!, editingUser!.id, payload),
     onSuccess: async (result: UserListItem) => {
-      toast.success("Usuario atualizado com sucesso.");
+      toast.success("Usuário atualizado com sucesso.");
       setFormOpen(false);
       setEditingUser(null);
       setSelectedUserId(result.id);
@@ -101,7 +113,7 @@ export function UsersPage() {
     mutationFn: ({ userId, status }: { userId: string; status: string }) =>
       usersService.updateStatus(accessToken!, userId, status),
     onSuccess: async (result: UserListItem) => {
-      toast.success("Status do usuario atualizado.");
+      toast.success("Status do usuário atualizado.");
       await queryClient.invalidateQueries({ queryKey: ["users"] });
       await queryClient.invalidateQueries({ queryKey: ["user-detail", result.id] });
     },
@@ -137,13 +149,17 @@ export function UsersPage() {
   const userForDrawer =
     editingUser && selectedUser?.id === editingUser.id ? selectedUser : editingUser;
   const pending = createMutation.isPending || updateMutation.isPending;
+  const tenantOptions = (tenantsQuery.data?.data ?? []).map((tenant) => ({
+    value: tenant.id,
+    label: tenant.fullName,
+  }));
 
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Governanca de acesso"
-        title="Usuarios"
-        description="Administre perfis, status operacionais, troca obrigatoria de senha e trilha recente de auditoria."
+        eyebrow="Governança de acesso"
+        title="Usuários"
+        description="Administre perfis, status operacionais, troca obrigatória de senha, portal do locatário e trilha recente de auditoria."
         actions={
           <button
             type="button"
@@ -153,14 +169,14 @@ export function UsersPage() {
             }}
             className="secondary-button"
           >
-            Novo usuario
+            Novo usuário
           </button>
         }
       />
 
       <div className="grid gap-5 md:grid-cols-3">
         {[
-          { label: "Usuarios ativos", value: metrics.active },
+          { label: "Usuários ativos", value: metrics.active },
           { label: "Bloqueados ou inativos", value: metrics.lockedOrInactive },
           { label: "Administradores", value: metrics.admins },
         ].map((item) => (
@@ -183,8 +199,8 @@ export function UsersPage() {
                 setSearch(event.target.value);
                 setPage(1);
               }}
-              placeholder="Buscar por nome, email ou telefone"
-            className="filter-control"
+              placeholder="Buscar por nome, e-mail ou telefone"
+              className="filter-control"
             />
             <select
               value={statusFilter}
@@ -192,7 +208,7 @@ export function UsersPage() {
                 setStatusFilter(event.target.value);
                 setPage(1);
               }}
-            className="filter-control"
+              className="filter-control"
             >
               <option value="">Todos os status</option>
               {userStatusOptions.map((option) => (
@@ -207,7 +223,7 @@ export function UsersPage() {
                 setRoleFilter(event.target.value);
                 setPage(1);
               }}
-            className="filter-control"
+              className="filter-control"
             >
               <option value="">Todos os perfis</option>
               {roles.map((role) => (
@@ -221,52 +237,49 @@ export function UsersPage() {
           {usersQuery.data?.data.length ? (
             <div className="space-y-4">
               <div className="overflow-x-auto">
-              <table className="data-table">
+                <table className="data-table">
                   <thead>
-                    <tr className="border-b border-ink-200 text-xs uppercase tracking-[0.18em] text-ink-400">
-                      <th className="pb-3">Usuario</th>
-                      <th className="pb-3">Perfis</th>
-                      <th className="pb-3">Status</th>
-                      <th className="pb-3">Ultimo acesso</th>
-                      <th className="pb-3">Seguranca</th>
-                      <th className="pb-3 text-right">Acoes</th>
+                    <tr>
+                      <th>Usuário</th>
+                      <th>Perfis</th>
+                      <th>Status</th>
+                      <th>Último acesso</th>
+                      <th>Segurança</th>
+                      <th className="text-right">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
                     {usersQuery.data.data.map((user) => (
-                      <tr
-                        key={user.id}
-                        className="border-b border-ink-100 last:border-b-0"
-                      >
-                        <td className="py-4">
+                      <tr key={user.id}>
+                        <td>
                           <p className="font-semibold text-ink-900">{user.fullName}</p>
                           <p className="text-sm text-ink-500">{user.email}</p>
                         </td>
-                        <td className="py-4 text-sm text-ink-600">
+                        <td className="text-sm text-ink-600">
                           {user.roleCodes.map(resolveRoleLabel).join(", ")}
                         </td>
-                        <td className="py-4">
+                        <td>
                           <StatusBadge
                             label={user.status}
                             tone={resolveStatusTone(user.status)}
                           />
                         </td>
-                        <td className="py-4 text-sm text-ink-600">
+                        <td className="text-sm text-ink-600">
                           {formatDateTime(user.lastLoginAt)}
                         </td>
-                        <td className="py-4 text-sm text-ink-600">
-                          {user.permissionCount} permissoes
+                        <td className="text-sm text-ink-600">
+                          {user.permissionCount} permissões
                           <br />
                           {user.mustChangePassword
-                            ? "Troca obrigatoria pendente"
+                            ? "Troca obrigatória pendente"
                             : "Troca livre"}
                         </td>
-                        <td className="py-4">
+                        <td>
                           <div className="flex justify-end gap-2">
                             <button
                               type="button"
                               onClick={() => setSelectedUserId(user.id)}
-                              className="rounded-2xl border border-ink-200 bg-white px-3 py-2 text-sm font-semibold text-ink-700"
+                              className="secondary-button px-3 py-2"
                             >
                               Detalhes
                             </button>
@@ -276,7 +289,7 @@ export function UsersPage() {
                                 setEditingUser(user);
                                 setFormOpen(true);
                               }}
-                              className="rounded-2xl bg-ink-950 px-3 py-2 text-sm font-semibold text-white"
+                              className="primary-button px-3 py-2"
                             >
                               Editar
                             </button>
@@ -286,7 +299,7 @@ export function UsersPage() {
                                 setResetTarget(user);
                                 setResetOpen(true);
                               }}
-                              className="rounded-2xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700"
+                              className="secondary-button px-3 py-2"
                             >
                               Senha
                             </button>
@@ -306,8 +319,8 @@ export function UsersPage() {
             </div>
           ) : (
             <EmptyState
-              title="Nenhum usuario encontrado"
-              description="Cadastre contas internas para organizar o acesso por perfil e rastrear a operacao."
+              title="Nenhum usuário encontrado"
+              description="Cadastre contas internas para organizar o acesso por perfil e rastrear a operação."
               action={
                 <button
                   type="button"
@@ -315,9 +328,9 @@ export function UsersPage() {
                     setEditingUser(null);
                     setFormOpen(true);
                   }}
-                  className="rounded-2xl bg-ink-950 px-5 py-3 text-sm font-semibold text-white"
+                  className="primary-button"
                 >
-                  Cadastrar usuario
+                  Cadastrar usuário
                 </button>
               }
             />
@@ -325,8 +338,8 @@ export function UsersPage() {
         </SectionCard>
 
         <SectionCard
-          title="Painel do usuario"
-          description="Selecione uma conta para revisar papeis, permissoes herdadas e atividade recente."
+          title="Painel do usuário"
+          description="Selecione uma conta para revisar papéis, permissões herdadas e atividade recente."
           actions={
             selectedUser ? (
               <button
@@ -338,7 +351,7 @@ export function UsersPage() {
                   })
                 }
                 disabled={statusMutation.isPending}
-                className="rounded-2xl border border-ink-200 bg-white px-4 py-3 text-sm font-semibold text-ink-700 transition hover:border-brand-200 hover:text-brand-700 disabled:opacity-60"
+                className="secondary-button"
               >
                 {selectedUser.status === "ACTIVE" ? "Inativar" : "Ativar"}
               </button>
@@ -355,7 +368,7 @@ export function UsersPage() {
                     </p>
                     <p className="mt-1 text-sm text-ink-500">{selectedUser.email}</p>
                     <p className="mt-2 text-sm text-ink-600">
-                      Ultimo acesso: {formatDateTime(selectedUser.lastLoginAt)}
+                      Último acesso: {formatDateTime(selectedUser.lastLoginAt)}
                     </p>
                   </div>
                   <StatusBadge
@@ -382,7 +395,18 @@ export function UsersPage() {
 
               <div>
                 <p className="text-xs uppercase tracking-[0.18em] text-ink-400">
-                  Permissoes herdadas
+                  Preferências
+                </p>
+                <div className="mt-3 rounded-[24px] border border-ink-200 bg-[var(--elevated-bg)] px-4 py-4 text-sm text-ink-600">
+                  Tema preferido: {selectedUser.preferredTheme}
+                  <br />
+                  Idioma preferido: {selectedUser.preferredLocale}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-ink-400">
+                  Permissões herdadas
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {selectedUser.permissions.map((permissionCode) => (
@@ -424,7 +448,7 @@ export function UsersPage() {
                     ))
                   ) : (
                     <div className="rounded-2xl border border-dashed border-ink-200 bg-white px-4 py-4 text-sm text-ink-500">
-                      Nenhum evento recente para este usuario.
+                      Nenhum evento recente para este usuário.
                     </div>
                   )}
                 </div>
@@ -432,8 +456,8 @@ export function UsersPage() {
             </div>
           ) : (
             <EmptyState
-              title="Selecione um usuario"
-              description="Abra os detalhes de uma conta para revisar papeis, seguranca e historico recente."
+              title="Selecione um usuário"
+              description="Abra os detalhes de uma conta para revisar papéis, segurança e histórico recente."
             />
           )}
         </SectionCard>
@@ -442,6 +466,7 @@ export function UsersPage() {
       <UserFormDrawer
         open={formOpen}
         roles={roles}
+        tenantOptions={tenantOptions}
         initialData={userForDrawer as UserDetail | UserListItem | null}
         pending={pending}
         onClose={() => {

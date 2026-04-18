@@ -1,5 +1,10 @@
 import { api } from "@/lib/api";
-import type { ContractDetail, PaginatedContracts } from "@/types/domain";
+import type {
+  ContractDetail,
+  LeaseTerminationRule,
+  LeaseTerminationSimulation,
+  PaginatedContracts,
+} from "@/types/domain";
 
 type ContractPayload = {
   code?: string | null;
@@ -33,6 +38,11 @@ type ContractListQuery = {
   tenantId?: string;
   rentLeadId?: string;
   onlyExpiring?: boolean;
+};
+
+type LeaseTerminationLineItem = {
+  label: string;
+  amount: number;
 };
 
 const authHeader = (accessToken: string) => ({
@@ -132,5 +142,74 @@ export const contractsService = {
     anchor.click();
     anchor.remove();
     window.URL.revokeObjectURL(url);
+  },
+
+  async listTerminationRules(accessToken: string) {
+    const { data } = await api.get<LeaseTerminationRule[]>(
+      "/contracts/termination/rules",
+      authHeader(accessToken),
+    );
+    return data;
+  },
+
+  async saveTerminationRule(
+    accessToken: string,
+    payload: {
+      id?: string;
+      name: string;
+      penaltyPercentage: number;
+      proportionalByRemainingTime: boolean;
+      allowManualAdjustments: boolean;
+      additionalCharges: LeaseTerminationLineItem[];
+      discounts: LeaseTerminationLineItem[];
+      formulaDescription: string;
+      standardNotes?: string | null;
+      legalSupportText?: string | null;
+      active: boolean;
+    },
+  ) {
+    const { data } = await api.post(
+      "/contracts/termination/rules",
+      payload,
+      authHeader(accessToken),
+    );
+    return data as LeaseTerminationRule[];
+  },
+
+  async simulateTermination(
+    accessToken: string,
+    contractId: string,
+    payload: {
+      ruleId?: string | null;
+      manualPenaltyPercentage?: number | null;
+      additionalCharges: LeaseTerminationLineItem[];
+      discounts: LeaseTerminationLineItem[];
+      reason?: string | null;
+      notes?: string | null;
+    },
+  ) {
+    const { data } = await api.post<LeaseTerminationSimulation>(
+      `/contracts/${contractId}/termination/simulate`,
+      payload,
+      authHeader(accessToken),
+    );
+    return data;
+  },
+
+  async confirmTermination(
+    accessToken: string,
+    contractId: string,
+    payload: {
+      simulationId: string;
+      reason: string;
+      finalNotes?: string | null;
+    },
+  ) {
+    const { data } = await api.post(
+      `/contracts/${contractId}/termination/confirm`,
+      payload,
+      authHeader(accessToken),
+    );
+    return data;
   },
 };

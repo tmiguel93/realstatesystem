@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { appRoutes } from "@imobiliaria/shared";
 import { ArrowLeft, MailCheck } from "lucide-react";
 import { toast } from "sonner";
+import { useI18n } from "@/features/preferences/language-provider";
 import { authService } from "@/services/auth-service";
 import { FormInput } from "@/components/form/form-input";
 
@@ -15,6 +16,7 @@ const forgotPasswordSchema = z.object({
 type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
 export function ForgotPasswordPage() {
+  const { t } = useI18n();
   const {
     register,
     handleSubmit,
@@ -41,16 +43,15 @@ export function ForgotPasswordPage() {
           </div>
 
           <h1 className="mt-5 font-display text-3xl text-ink-950">
-            Recuperar senha
+            {t("auth.recoveryTitle")}
           </h1>
           <p className="mt-2 text-sm text-ink-500">
-            Informe seu email para registrar a solicitacao de redefinicao com
-            seguranca.
+            {t("auth.recoveryDescription")}
           </p>
 
           <form className="mt-8 space-y-5" onSubmit={onSubmit}>
             <FormInput
-              label="Email"
+              label={t("auth.emailLabel")}
               type="email"
               placeholder="voce@empresa.com.br"
               error={errors.email?.message}
@@ -62,7 +63,7 @@ export function ForgotPasswordPage() {
               disabled={isSubmitting}
               className="inline-flex w-full items-center justify-center rounded-2xl bg-ink-950 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {isSubmitting ? "Enviando..." : "Enviar instrucoes"}
+              {isSubmitting ? t("auth.sending") : t("auth.recoverySubmit")}
             </button>
           </form>
 
@@ -71,11 +72,10 @@ export function ForgotPasswordPage() {
             className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-brand-700 transition hover:text-brand-900"
           >
             <ArrowLeft size={16} />
-            Voltar para o login
+            {t("auth.backToLogin")}
           </Link>
         </div>
       </div>
     </div>
   );
 }
-

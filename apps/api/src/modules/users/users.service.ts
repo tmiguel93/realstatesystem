@@ -1,4 +1,5 @@
 import { AuditEntityType, Prisma, UserStatus } from "@prisma/client";
+import { roleCodes } from "@imobiliaria/shared";
 import { prisma } from "../../core/prisma";
 import { HttpError } from "../../core/http-error";
 import { buildPaginationMeta, resolvePagination } from "../../core/pagination";
@@ -27,6 +28,7 @@ type CreateUserPayload = {
   status: UserStatus;
   mustChangePassword: boolean;
   roleCodes: string[];
+  tenantPortalTenantId?: string | null;
   password?: string;
 };
 
@@ -191,6 +193,7 @@ export class UsersService {
     }
 
     const roles = await this.getRolesByCodes(payload.roleCodes);
+    await this.ensureTenantPortalLinkValidity(payload.roleCodes, payload.tenantPortalTenantId);
     const passwordHash = await hashPassword(payload.password);
 
     try {
@@ -207,6 +210,16 @@ export class UsersService {
               roleId: role.id,
             })),
           },
+          tenantPortalAccesses:
+            payload.roleCodes.includes(roleCodes.TENANT_PORTAL) &&
+            payload.tenantPortalTenantId
+              ? {
+                  create: {
+                    tenantId: payload.tenantPortalTenantId,
+                    status: "ACTIVE",
+                  },
+                }
+              : undefined,
         },
         include: {
           roles: {
@@ -238,6 +251,7 @@ export class UsersService {
 
   async update(id: string, payload: UpdateUserPayload, context: RequestContext) {
     const roles = await this.getRolesByCodes(payload.roleCodes);
+    await this.ensureTenantPortalLinkValidity(payload.roleCodes, payload.tenantPortalTenantId);
 
     try {
       const user = await prisma.user.update({
@@ -254,6 +268,19 @@ export class UsersService {
               roleId: role.id,
             })),
           },
+          tenantPortalAccesses:
+            payload.roleCodes.includes(roleCodes.TENANT_PORTAL) &&
+            payload.tenantPortalTenantId
+              ? {
+                  deleteMany: {},
+                  create: {
+                    tenantId: payload.tenantPortalTenantId,
+                    status: "ACTIVE",
+                  },
+                }
+              : {
+                  deleteMany: {},
+                },
         },
         include: {
           roles: {
@@ -375,6 +402,85 @@ export class UsersService {
     }));
   }
 
+  async listPermissions() {
+    const permissions = await prisma.permission.findMany({
+      orderBy: [{ resource: "asc" }, { action: "asc" }],
+    });
+
+    return permissions.map((permission) => ({
+      id: permission.id,
+      code: permission.code,
+      resource: permission.resource,
+      action: permission.action,
+      description: permission.description,
+    }));
+  }
+
+  async updateRolePermissions(
+    roleId: string,
+    permissionCodes: string[],
+    context: RequestContext,
+  ) {
+    const role = await prisma.role.findUnique({
+      where: { id: roleId },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        isSystem: true,
+      },
+    });
+
+    if (!role) {
+      throw new HttpError(404, "Perfil não encontrado.");
+    }
+
+    const permissions = await prisma.permission.findMany({
+      where: {
+        code: {
+          in: permissionCodes,
+        },
+      },
+      select: {
+        id: true,
+        code: true,
+      },
+    });
+
+    if (permissions.length !== permissionCodes.length) {
+      throw new HttpError(422, "Uma ou mais permissões são inválidas.");
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.rolePermission.deleteMany({
+        where: { roleId },
+      });
+
+      await tx.rolePermission.createMany({
+        data: permissions.map((permission) => ({
+          roleId,
+          permissionId: permission.id,
+        })),
+      });
+    });
+
+    await createAuditLog({
+      actorUserId: context.actorUserId,
+      action: "roles.permissions.update",
+      entityType: AuditEntityType.ROLE,
+      entityId: roleId,
+      description: `Permissões do perfil ${role.name} foram atualizadas.`,
+      metadata: {
+        roleCode: role.code,
+        permissionCodes,
+      },
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent,
+    });
+
+    return this.listRoles();
+  }
+
   async listAssignable() {
     const users = await prisma.user.findMany({
       where: {
@@ -415,6 +521,31 @@ export class UsersService {
     }
 
     return roles;
+  }
+
+  private async ensureTenantPortalLinkValidity(
+    userRoleCodes: string[],
+    tenantPortalTenantId?: string | null,
+  ) {
+    if (!userRoleCodes.includes(roleCodes.TENANT_PORTAL)) {
+      return;
+    }
+
+    if (!tenantPortalTenantId) {
+      throw new HttpError(
+        422,
+        "Selecione o locatário vinculado ao perfil do portal.",
+      );
+    }
+
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantPortalTenantId },
+      select: { id: true },
+    });
+
+    if (!tenant) {
+      throw new HttpError(404, "Locatário do portal não encontrado.");
+    }
   }
 
   private async audit(

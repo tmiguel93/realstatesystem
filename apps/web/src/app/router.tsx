@@ -3,14 +3,20 @@ import { appRoutes, permissionCodes } from "@imobiliaria/shared";
 import { AppShell } from "@/layouts/app-shell";
 import { ProtectedRoute } from "@/routes/protected-route";
 import { PermissionGuard } from "@/routes/permission-guard";
-import { LoginPage } from "@/pages/login-page";
-import { ForgotPasswordPage } from "@/pages/forgot-password-page";
-import { DashboardPage } from "@/pages/dashboard-page";
+import { useAuth } from "@/features/auth/auth-context";
+import { resolveHomeRoute } from "@/lib/navigation";
+import { AccessManagementPage } from "@/pages/access-management-page";
 import { ContractDetailPage } from "@/pages/contract-detail-page";
 import { ContractGeneratorPage } from "@/pages/contract-generator-page";
+import { ContractTerminationConfirmPage } from "@/pages/contract-termination-confirm-page";
+import { ContractTerminationRulesPage } from "@/pages/contract-termination-rules-page";
+import { ContractTerminationSimulationPage } from "@/pages/contract-termination-simulation-page";
 import { ContractsPage } from "@/pages/contracts-page";
+import { DashboardPage } from "@/pages/dashboard-page";
 import { ForbiddenPage } from "@/pages/forbidden-page";
+import { ForgotPasswordPage } from "@/pages/forgot-password-page";
 import { KeysPage } from "@/pages/keys-page";
+import { LoginPage } from "@/pages/login-page";
 import { MaintenanceDashboardPage } from "@/pages/maintenance-dashboard-page";
 import { MaintenanceKanbanPage } from "@/pages/maintenance-kanban-page";
 import { MaintenanceTicketDetailPage } from "@/pages/maintenance-ticket-detail-page";
@@ -18,22 +24,38 @@ import { MaintenanceTicketNewPage } from "@/pages/maintenance-ticket-new-page";
 import { MaintenanceTicketsPage } from "@/pages/maintenance-tickets-page";
 import { OwnerDetailPage } from "@/pages/owner-detail-page";
 import { OwnersPage } from "@/pages/owners-page";
-import { PlaceholderPage } from "@/pages/placeholder-page";
 import { PropertiesPage } from "@/pages/properties-page";
 import { PropertyDetailPage } from "@/pages/property-detail-page";
 import { RentLeadDetailPage } from "@/pages/rent-lead-detail-page";
 import { RentsPage } from "@/pages/rents-page";
 import { SaleLeadDetailPage } from "@/pages/sale-lead-detail-page";
 import { SalesPage } from "@/pages/sales-page";
+import { SettingsPage } from "@/pages/settings-page";
 import { TenantDetailPage } from "@/pages/tenant-detail-page";
+import { TenantPortalPage } from "@/pages/tenant-portal-page";
+import { TenantPortalTicketNewPage } from "@/pages/tenant-portal-ticket-new-page";
 import { TenantsPage } from "@/pages/tenants-page";
 import { UsersPage } from "@/pages/users-page";
 import { VisitsPage } from "@/pages/visits-page";
 
+function DefaultLanding() {
+  const { status, user } = useAuth();
+
+  if (status === "loading") {
+    return null;
+  }
+
+  if (status !== "authenticated" || !user) {
+    return <Navigate to={appRoutes.login} replace />;
+  }
+
+  return <Navigate to={resolveHomeRoute(user.permissions)} replace />;
+}
+
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Navigate to={appRoutes.dashboard} replace />,
+    element: <DefaultLanding />,
   },
   {
     path: appRoutes.login,
@@ -150,6 +172,27 @@ const router = createBrowserRouter([
             ),
           },
           {
+            path: appRoutes.tenantPortal,
+            element: (
+              <PermissionGuard permissions={[permissionCodes.TENANT_PORTAL_ACCESS]}>
+                <TenantPortalPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: appRoutes.tenantPortalTicketNew,
+            element: (
+              <PermissionGuard
+                permissions={[
+                  permissionCodes.TENANT_PORTAL_ACCESS,
+                  permissionCodes.MAINTENANCE_PORTAL_OPEN,
+                ]}
+              >
+                <TenantPortalTicketNewPage />
+              </PermissionGuard>
+            ),
+          },
+          {
             path: appRoutes.contracts,
             element: (
               <PermissionGuard permissions={[permissionCodes.CONTRACTS_READ]}>
@@ -170,6 +213,36 @@ const router = createBrowserRouter([
             element: (
               <PermissionGuard permissions={[permissionCodes.CONTRACTS_GENERATE]}>
                 <ContractGeneratorPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: appRoutes.contractTerminationRules,
+            element: (
+              <PermissionGuard
+                permissions={[permissionCodes.LEASE_TERMINATION_RULES_MANAGE]}
+              >
+                <ContractTerminationRulesPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: appRoutes.contractTerminationSimulate,
+            element: (
+              <PermissionGuard
+                permissions={[permissionCodes.LEASE_TERMINATION_SIMULATE]}
+              >
+                <ContractTerminationSimulationPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: appRoutes.contractTerminationConfirm,
+            element: (
+              <PermissionGuard
+                permissions={[permissionCodes.LEASE_TERMINATION_EXECUTE]}
+              >
+                <ContractTerminationConfirmPage />
               </PermissionGuard>
             ),
           },
@@ -230,13 +303,18 @@ const router = createBrowserRouter([
             ),
           },
           {
+            path: appRoutes.accessManagement,
+            element: (
+              <PermissionGuard permissions={[permissionCodes.ACCESS_MANAGE]}>
+                <AccessManagementPage />
+              </PermissionGuard>
+            ),
+          },
+          {
             path: appRoutes.settings,
             element: (
-              <PermissionGuard permissions={[permissionCodes.SETTINGS_MANAGE]}>
-                <PlaceholderPage
-                  title="Configuracoes"
-                  description="Area sensivel protegida para parametros, templates e politicas globais."
-                />
+              <PermissionGuard permissions={[permissionCodes.PREFERENCES_MANAGE]}>
+                <SettingsPage />
               </PermissionGuard>
             ),
           },

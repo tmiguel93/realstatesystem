@@ -6,7 +6,10 @@ function AuthLoadingScreen() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-ink-950 text-sand-50">
       <div className="rounded-[32px] border border-white/10 bg-white/5 px-8 py-6 shadow-soft backdrop-blur">
-        <p className="font-display text-xl">Carregando sua sessao...</p>
+        <p className="font-display text-xl">Carregando sua sessão...</p>
+        <p className="mt-2 text-sm text-white/70">
+          Validando sua sessão com segurança.
+        </p>
       </div>
     </div>
   );
@@ -32,4 +35,3 @@ export function ProtectedRoute() {
 
   return <Outlet />;
 }
-

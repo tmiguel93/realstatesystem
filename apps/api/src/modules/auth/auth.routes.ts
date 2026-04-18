@@ -19,3 +19,8 @@ authRouter.post(
   asyncHandler(controller.resetPassword.bind(controller)),
 );
 authRouter.get("/me", requireAuth, asyncHandler(controller.me.bind(controller)));
+authRouter.patch(
+  "/preferences",
+  requireAuth,
+  asyncHandler(controller.updatePreferences.bind(controller)),
+);

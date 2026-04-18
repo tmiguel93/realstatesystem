@@ -1,4 +1,10 @@
-import { Prisma, UserStatus } from "@prisma/client";
+import {
+  AuditEntityType,
+  LocaleCode,
+  Prisma,
+  ThemePreference,
+  UserStatus,
+} from "@prisma/client";
 import { comparePassword, hashPassword } from "../../core/password";
 import { prisma } from "../../core/prisma";
 import { HttpError } from "../../core/http-error";
@@ -15,6 +21,11 @@ import { createAuditLog } from "../../core/audit";
 type RequestContext = {
   ipAddress?: string;
   userAgent?: string;
+};
+
+type UserPreferencesInput = {
+  preferredTheme: ThemePreference;
+  preferredLocale: LocaleCode;
 };
 
 type UserWithAccess = Prisma.UserGetPayload<{
@@ -341,6 +352,48 @@ export class AuthService {
     return this.serializeUser(user);
   }
 
+  async updatePreferences(
+    userId: string,
+    payload: UserPreferencesInput,
+    context: RequestContext,
+  ) {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        preferredTheme: payload.preferredTheme,
+        preferredLocale: payload.preferredLocale,
+      },
+      include: {
+        roles: {
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  include: {
+                    permission: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    await createAuditLog({
+      actorUserId: userId,
+      action: "auth.update-preferences",
+      entityType: AuditEntityType.USER,
+      entityId: userId,
+      description: "Preferências de tema e idioma foram atualizadas.",
+      metadata: payload,
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent,
+    });
+
+    return this.serializeUser(user);
+  }
+
   private serializeUser(user: UserWithAccess) {
     const roles = user.roles.map((item) => item.role.code);
     const permissions = Array.from<string>(
@@ -361,6 +414,8 @@ export class AuthService {
       roles,
       permissions,
       lastLoginAt: user.lastLoginAt,
+      preferredTheme: user.preferredTheme,
+      preferredLocale: user.preferredLocale,
     };
   }
 }

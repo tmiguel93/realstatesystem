@@ -7,13 +7,14 @@ import {
   propertyStatusOptions,
 } from "@imobiliaria/shared";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/feedback/empty-state";
 import { PageHeader } from "@/components/feedback/page-header";
 import { SectionCard } from "@/components/feedback/section-card";
 import { StatusBadge } from "@/components/feedback/status-badge";
-import { EmptyState } from "@/components/feedback/empty-state";
 import { PaginationControls } from "@/components/navigation/pagination-controls";
 import { useAuth } from "@/features/auth/auth-context";
 import { PropertyFormDrawer } from "@/features/properties/property-form-drawer";
+import { resolveAssetUrl } from "@/lib/assets";
 import { buildDetailPath, formatCurrency } from "@/lib/format";
 import { resolveStatusTone } from "@/lib/status";
 import { ownersService } from "@/services/owners-service";
@@ -64,7 +65,7 @@ export function PropertiesPage() {
     mutationFn: (payload: Parameters<typeof propertiesService.create>[1]) =>
       propertiesService.create(accessToken!, payload),
     onSuccess: async () => {
-      toast.success("Imovel cadastrado com sucesso.");
+      toast.success("Imóvel cadastrado com sucesso.");
       setDrawerOpen(false);
       setSelectedProperty(null);
       await queryClient.invalidateQueries({ queryKey: ["properties"] });
@@ -75,13 +76,16 @@ export function PropertiesPage() {
     mutationFn: (payload: Parameters<typeof propertiesService.update>[2]) =>
       propertiesService.update(accessToken!, selectedProperty!.id, payload),
     onSuccess: async () => {
-      toast.success("Imovel atualizado com sucesso.");
+      toast.success("Imóvel atualizado com sucesso.");
+      const currentId = selectedProperty?.id ?? null;
       setDrawerOpen(false);
       setSelectedProperty(null);
       await queryClient.invalidateQueries({ queryKey: ["properties"] });
-      await queryClient.invalidateQueries({
-        queryKey: ["property-detail", selectedProperty?.id],
-      });
+      if (currentId) {
+        await queryClient.invalidateQueries({
+          queryKey: ["property-detail", currentId],
+        });
+      }
     },
   });
 
@@ -107,8 +111,8 @@ export function PropertiesPage() {
     <div className="space-y-6">
       <PageHeader
         eyebrow="Cadastro de ativos"
-        title="Imoveis"
-        description="Controle disponibilidade, finalidade, proprietario, valores e atributos de cada ativo comercial."
+        title="Imóveis"
+        description="Controle disponibilidade, finalidade, proprietário, valores e atributos de cada ativo comercial."
         actions={
           <button
             type="button"
@@ -118,14 +122,14 @@ export function PropertiesPage() {
             }}
             className="secondary-button"
           >
-            Novo imovel
+            Novo imóvel
           </button>
         }
       />
 
       <div className="grid gap-5 md:grid-cols-3">
         {[
-          { label: "Disponiveis", value: metrics.available },
+          { label: "Disponíveis", value: metrics.available },
           { label: "Alugados ou vendidos", value: metrics.rentedOrSold },
           { label: "Publicados", value: metrics.published },
         ].map((item) => (
@@ -137,8 +141,8 @@ export function PropertiesPage() {
       </div>
 
       <SectionCard
-        title="Portfolio administrado"
-        description="Liste ativos por finalidade, status comercial e contexto geografico."
+        title="Portfólio administrado"
+        description="Liste ativos por finalidade, status comercial e contexto geográfico."
       >
         <div className="mb-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px_220px]">
           <input
@@ -147,7 +151,7 @@ export function PropertiesPage() {
               setSearch(event.target.value);
               setPage(1);
             }}
-            placeholder="Buscar por codigo, titulo, rua ou bairro"
+            placeholder="Buscar por código, título, rua ou bairro"
             className="filter-control"
           />
           <select
@@ -187,47 +191,61 @@ export function PropertiesPage() {
             <div className="overflow-x-auto">
               <table className="data-table">
                 <thead>
-                  <tr className="border-b border-ink-200 text-xs uppercase tracking-[0.18em] text-ink-400">
-                    <th className="pb-3">Codigo</th>
-                    <th className="pb-3">Imovel</th>
-                    <th className="pb-3">Proprietario</th>
-                    <th className="pb-3">Finalidade</th>
-                    <th className="pb-3">Status</th>
-                    <th className="pb-3">Valores</th>
-                    <th className="pb-3 text-right">Acoes</th>
+                  <tr>
+                    <th>Código</th>
+                    <th>Imóvel</th>
+                    <th>Proprietário</th>
+                    <th>Finalidade</th>
+                    <th>Status</th>
+                    <th>Valores</th>
+                    <th className="text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {propertiesQuery.data.data.map((property) => (
-                    <tr
-                      key={property.id}
-                      className="border-b border-ink-100 last:border-b-0"
-                    >
-                      <td className="py-4 text-sm font-semibold text-ink-900">
+                    <tr key={property.id}>
+                      <td className="text-sm font-semibold text-ink-900">
                         {property.code}
                       </td>
-                      <td className="py-4">
-                        <p className="font-semibold text-ink-900">{property.title}</p>
-                        <p className="text-sm text-ink-500">
-                          {property.district}, {property.city}
-                        </p>
+                      <td>
+                        <div className="flex items-center gap-3">
+                          <div className="h-14 w-20 overflow-hidden rounded-2xl bg-ink-100">
+                            {property.coverImageUrl ? (
+                              <img
+                                src={resolveAssetUrl(property.coverImageUrl) ?? property.coverImageUrl}
+                                alt={property.title}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="grid h-full w-full place-items-center text-xs text-ink-400">
+                                Sem foto
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-ink-900">{property.title}</p>
+                            <p className="text-sm text-ink-500">
+                              {property.district}, {property.city}
+                            </p>
+                          </div>
+                        </div>
                       </td>
-                      <td className="py-4 text-sm text-ink-600">
+                      <td className="text-sm text-ink-600">
                         {property.owner.fullName}
                       </td>
-                      <td className="py-4 text-sm text-ink-600">{property.purpose}</td>
-                      <td className="py-4">
+                      <td className="text-sm text-ink-600">{property.purpose}</td>
+                      <td>
                         <StatusBadge
                           label={property.status}
                           tone={resolveStatusTone(property.status)}
                         />
                       </td>
-                      <td className="py-4 text-sm text-ink-600">
+                      <td className="text-sm text-ink-600">
                         Venda: {formatCurrency(property.salePrice)}
                         <br />
-                        Locacao: {formatCurrency(property.rentPrice)}
+                        Locação: {formatCurrency(property.rentPrice)}
                       </td>
-                      <td className="py-4">
+                      <td>
                         <div className="flex justify-end gap-2">
                           <button
                             type="button"
@@ -239,9 +257,9 @@ export function PropertiesPage() {
                                 ),
                               )
                             }
-                            className="rounded-2xl border border-ink-200 bg-white px-3 py-2 text-sm font-semibold text-ink-700"
+                            className="secondary-button px-3 py-2"
                           >
-                            Detalhes
+                            Abrir detalhe
                           </button>
                           <button
                             type="button"
@@ -249,7 +267,7 @@ export function PropertiesPage() {
                               setSelectedProperty(property);
                               setDrawerOpen(true);
                             }}
-                            className="rounded-2xl bg-ink-950 px-3 py-2 text-sm font-semibold text-white"
+                            className="primary-button px-3 py-2"
                           >
                             Editar
                           </button>
@@ -269,8 +287,8 @@ export function PropertiesPage() {
           </div>
         ) : (
           <EmptyState
-            title="Nenhum imovel encontrado"
-            description="Cadastre um ativo para organizar o portfolio comercial da imobiliaria."
+            title="Nenhum imóvel encontrado"
+            description="Cadastre um ativo para organizar o portfólio comercial da imobiliária."
             action={
               <button
                 type="button"
@@ -280,7 +298,7 @@ export function PropertiesPage() {
                 }}
                 className="primary-button"
               >
-                Cadastrar imovel
+                Cadastrar imóvel
               </button>
             }
           />

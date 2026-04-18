@@ -6,10 +6,140 @@
 
 :root {
   color-scheme: light;
-  --app-bg: #ede8de;
-  --panel-bg: rgba(255, 255, 255, 0.82);
-  --panel-border: rgba(255, 255, 255, 0.72);
-  --panel-shadow: 0 18px 50px -24px rgba(24, 57, 48, 0.18);
+  --color-brand-50: 238 248 245;
+  --color-brand-100: 215 238 230;
+  --color-brand-200: 177 223 207;
+  --color-brand-300: 132 200 176;
+  --color-brand-400: 86 171 141;
+  --color-brand-500: 46 139 110;
+  --color-brand-600: 34 109 87;
+  --color-brand-700: 30 86 70;
+  --color-brand-800: 27 69 57;
+  --color-brand-900: 24 57 48;
+  --color-ink-50: 246 247 247;
+  --color-ink-100: 233 235 235;
+  --color-ink-200: 209 216 216;
+  --color-ink-300: 169 182 181;
+  --color-ink-400: 122 140 139;
+  --color-ink-500: 95 111 109;
+  --color-ink-600: 75 88 88;
+  --color-ink-700: 64 74 75;
+  --color-ink-800: 54 61 62;
+  --color-ink-900: 43 48 49;
+  --color-ink-950: 23 33 31;
+  --color-sand-50: 251 248 243;
+  --color-sand-100: 243 237 225;
+  --color-sand-200: 232 219 193;
+  --color-sand-300: 219 192 145;
+  --color-sand-400: 207 161 96;
+  --color-sand-500: 193 133 63;
+  --color-sand-600: 172 109 52;
+  --color-sand-700: 143 84 45;
+  --color-sand-800: 117 68 43;
+  --color-sand-900: 97 57 40;
+  --app-bg: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.72),
+    rgba(237, 232, 222, 0.9)
+  );
+  --app-bg-solid: 237 232 222;
+  --panel-bg: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.94),
+    rgba(252, 250, 246, 0.88)
+  );
+  --panel-bg-muted: rgba(251, 248, 243, 0.92);
+  --panel-border: rgba(255, 255, 255, 0.74);
+  --panel-shadow: 0 24px 54px -30px rgba(24, 57, 48, 0.22);
+  --panel-shadow-soft: 0 18px 50px -24px rgba(24, 57, 48, 0.35);
+  --field-bg: rgba(255, 255, 255, 0.92);
+  --field-border: rgba(209, 216, 216, 0.88);
+  --field-text: rgb(23 33 31);
+  --field-placeholder: rgba(122, 140, 139, 0.9);
+  --field-hover-border: rgba(132, 200, 176, 0.88);
+  --table-row-bg: rgba(255, 255, 255, 0.94);
+  --table-row-border: rgba(209, 216, 216, 0.78);
+  --elevated-bg: rgba(255, 255, 255, 0.92);
+  --overlay-bg: rgba(23, 33, 31, 0.42);
+  --sidebar-bg: linear-gradient(
+    180deg,
+    rgba(252, 249, 244, 0.98),
+    rgba(244, 240, 232, 0.94)
+  );
+  --shell-bg: linear-gradient(
+    180deg,
+    rgba(248, 245, 239, 0.96),
+    rgba(244, 240, 232, 0.9)
+  );
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-brand-50: 18 34 30;
+  --color-brand-100: 24 48 42;
+  --color-brand-200: 31 69 60;
+  --color-brand-300: 46 108 91;
+  --color-brand-400: 71 146 121;
+  --color-brand-500: 96 186 151;
+  --color-brand-600: 125 206 172;
+  --color-brand-700: 166 224 196;
+  --color-brand-800: 205 240 223;
+  --color-brand-900: 232 250 242;
+  --color-ink-50: 18 21 24;
+  --color-ink-100: 28 34 38;
+  --color-ink-200: 42 51 57;
+  --color-ink-300: 68 80 88;
+  --color-ink-400: 112 127 135;
+  --color-ink-500: 149 162 168;
+  --color-ink-600: 181 191 196;
+  --color-ink-700: 205 213 217;
+  --color-ink-800: 224 229 232;
+  --color-ink-900: 238 242 244;
+  --color-ink-950: 248 250 251;
+  --color-sand-50: 35 28 24;
+  --color-sand-100: 52 40 33;
+  --color-sand-200: 79 59 46;
+  --color-sand-300: 118 84 64;
+  --color-sand-400: 157 111 80;
+  --color-sand-500: 198 141 96;
+  --color-sand-600: 219 167 126;
+  --color-sand-700: 235 194 164;
+  --color-sand-800: 245 220 198;
+  --color-sand-900: 251 240 229;
+  --app-bg: linear-gradient(
+    180deg,
+    rgba(11, 18, 20, 0.98),
+    rgba(18, 25, 28, 0.96)
+  );
+  --app-bg-solid: 11 18 20;
+  --panel-bg: linear-gradient(
+    180deg,
+    rgba(25, 32, 36, 0.95),
+    rgba(17, 24, 28, 0.92)
+  );
+  --panel-bg-muted: rgba(24, 31, 35, 0.94);
+  --panel-border: rgba(66, 78, 86, 0.72);
+  --panel-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.48);
+  --panel-shadow-soft: 0 20px 54px -28px rgba(0, 0, 0, 0.55);
+  --field-bg: rgba(19, 27, 31, 0.94);
+  --field-border: rgba(59, 72, 79, 0.92);
+  --field-text: rgb(248 250 251);
+  --field-placeholder: rgba(149, 162, 168, 0.9);
+  --field-hover-border: rgba(96, 186, 151, 0.88);
+  --table-row-bg: rgba(20, 28, 32, 0.96);
+  --table-row-border: rgba(59, 72, 79, 0.9);
+  --elevated-bg: rgba(19, 27, 31, 0.96);
+  --overlay-bg: rgba(0, 0, 0, 0.58);
+  --sidebar-bg: linear-gradient(
+    180deg,
+    rgba(18, 24, 28, 0.98),
+    rgba(15, 20, 24, 0.96)
+  );
+  --shell-bg: linear-gradient(
+    180deg,
+    rgba(17, 24, 28, 0.96),
+    rgba(13, 19, 22, 0.96)
+  );
 }
 
 html {
@@ -19,11 +149,15 @@ html {
 body {
   @apply font-sans text-ink-950 antialiased;
   min-width: 320px;
-  background-color: var(--app-bg);
+  background-color: rgb(var(--app-bg-solid));
   background-image:
-    radial-gradient(circle at top left, rgba(46, 139, 110, 0.09), transparent 24%),
-    radial-gradient(circle at top right, rgba(193, 133, 63, 0.08), transparent 22%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(237, 232, 222, 0.75));
+    radial-gradient(circle at top left, rgb(var(--color-brand-500) / 0.12), transparent 24%),
+    radial-gradient(circle at top right, rgb(var(--color-sand-500) / 0.1), transparent 22%),
+    var(--app-bg);
+  transition:
+    background-color 240ms ease,
+    color 240ms ease,
+    background-image 240ms ease;
 }
 
 #root {
@@ -32,7 +166,7 @@ body {
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(24, 57, 48, 0.3) transparent;
+  scrollbar-color: rgb(var(--color-ink-500) / 0.45) transparent;
 }
 
 *::-webkit-scrollbar {
@@ -41,7 +175,7 @@ body {
 }
 
 *::-webkit-scrollbar-thumb {
-  background: rgba(24, 57, 48, 0.28);
+  background: rgb(var(--color-ink-500) / 0.35);
   border-radius: 999px;
 }
 
@@ -50,8 +184,8 @@ body {
 }
 
 ::selection {
-  background: rgba(46, 139, 110, 0.18);
-  color: #17211f;
+  background: rgb(var(--color-brand-500) / 0.24);
+  color: rgb(var(--color-ink-950));
 }
 
 @keyframes panelFloat {
@@ -79,58 +213,80 @@ body {
 @layer components {
   .panel-card {
     @apply rounded-[30px] border p-6 backdrop-blur-xl;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(252, 250, 246, 0.82));
+    background: var(--panel-bg);
     border-color: var(--panel-border);
     box-shadow: var(--panel-shadow);
   }
 
   .panel-card-muted {
-    @apply rounded-[28px] border border-ink-200/70 bg-[#fbf8f3]/90;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+    @apply rounded-[28px] border;
+    background: var(--panel-bg-muted);
+    border-color: var(--field-border);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
   }
 
   .filter-control {
-    @apply w-full rounded-2xl border border-ink-200/80 bg-white/90 px-4 py-3 text-sm text-ink-900 outline-none transition duration-200 placeholder:text-ink-400 focus:border-brand-300 focus:ring-4 focus:ring-brand-100/80;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    @apply w-full rounded-2xl px-4 py-3 text-sm outline-none transition duration-200 focus:ring-4 focus:ring-brand-100/60;
+    background: var(--field-bg);
+    border: 1px solid var(--field-border);
+    color: var(--field-text);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
   }
 
   .field-control {
-    @apply w-full rounded-2xl border border-ink-200/80 bg-white/90 px-4 py-3 text-sm text-ink-900 outline-none transition duration-200 placeholder:text-ink-400 focus:border-brand-300 focus:ring-4 focus:ring-brand-100/80;
+    @apply w-full rounded-2xl px-4 py-3 text-sm outline-none transition duration-200 focus:ring-4 focus:ring-brand-100/60;
+    background: var(--field-bg);
+    border: 1px solid var(--field-border);
+    color: var(--field-text);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.92),
-      0 10px 24px -24px rgba(24, 57, 48, 0.32);
+      inset 0 1px 0 rgb(255 255 255 / 0.08),
+      0 10px 24px -24px rgb(0 0 0 / 0.45);
+  }
+
+  .field-control::placeholder,
+  .filter-control::placeholder {
+    color: var(--field-placeholder);
   }
 
   .field-control:hover,
   .filter-control:hover {
-    border-color: rgba(132, 200, 176, 0.88);
+    border-color: var(--field-hover-border);
   }
 
   .field-control:disabled,
   .filter-control:disabled {
-    @apply cursor-not-allowed bg-ink-100/90 text-ink-400;
+    @apply cursor-not-allowed;
+    background: rgb(var(--color-ink-100) / 0.68);
+    color: rgb(var(--color-ink-500));
   }
 
   .primary-button {
     @apply inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold text-white transition duration-200;
-    background: linear-gradient(135deg, #17211f, #1e5646);
-    box-shadow: 0 16px 34px -20px rgba(24, 57, 48, 0.58);
+    background: linear-gradient(
+      135deg,
+      rgb(var(--color-ink-950)),
+      rgb(var(--color-brand-700))
+    );
+    box-shadow: 0 16px 34px -20px rgb(0 0 0 / 0.38);
   }
 
   .primary-button:hover {
     transform: translateY(-1px);
-    box-shadow: 0 18px 38px -18px rgba(24, 57, 48, 0.46);
+    box-shadow: 0 18px 38px -18px rgb(0 0 0 / 0.42);
   }
 
   .secondary-button {
-    @apply inline-flex items-center justify-center gap-2 rounded-2xl border border-ink-200/80 bg-white px-4 py-3 text-sm font-semibold text-ink-700 transition duration-200;
-    background: rgba(255, 255, 255, 0.92);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition duration-200;
+    background: var(--elevated-bg);
+    border: 1px solid var(--field-border);
+    color: rgb(var(--color-ink-700));
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
   }
 
   .secondary-button:hover {
-    @apply border-brand-200 text-ink-950;
     transform: translateY(-1px);
+    border-color: rgb(var(--color-brand-300) / 0.8);
+    color: rgb(var(--color-ink-950));
   }
 
   .data-table {
@@ -152,23 +308,30 @@ body {
   }
 
   .data-table tbody td {
-    @apply bg-white px-4 py-4 align-middle text-sm;
-    background: rgba(255, 255, 255, 0.92);
+    @apply px-4 py-4 align-middle text-sm;
+    background: var(--table-row-bg);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.9),
-      0 12px 30px -28px rgba(24, 57, 48, 0.45);
+      inset 0 1px 0 rgb(255 255 255 / 0.08),
+      0 12px 30px -28px rgb(0 0 0 / 0.35);
   }
 
   .data-table tbody td:first-child {
-    @apply rounded-l-[22px] border-l border-y border-ink-200/70;
+    @apply rounded-l-[22px];
+    border-left: 1px solid var(--table-row-border);
+    border-top: 1px solid var(--table-row-border);
+    border-bottom: 1px solid var(--table-row-border);
   }
 
   .data-table tbody td:not(:first-child):not(:last-child) {
-    @apply border-y border-ink-200/70;
+    border-top: 1px solid var(--table-row-border);
+    border-bottom: 1px solid var(--table-row-border);
   }
 
   .data-table tbody td:last-child {
-    @apply rounded-r-[22px] border-r border-y border-ink-200/70;
+    @apply rounded-r-[22px];
+    border-right: 1px solid var(--table-row-border);
+    border-top: 1px solid var(--table-row-border);
+    border-bottom: 1px solid var(--table-row-border);
   }
 
   .skeleton-shimmer {
@@ -182,7 +345,7 @@ body {
     background: linear-gradient(
       90deg,
       transparent 0%,
-      rgba(255, 255, 255, 0.55) 50%,
+      rgb(255 255 255 / 0.2) 50%,
       transparent 100%
     );
     animation: skeletonShimmer 1.4s ease-in-out infinite;

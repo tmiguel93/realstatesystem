@@ -51,6 +51,16 @@ export const rolesRouter = Router();
 rolesRouter.use(requireAuth);
 rolesRouter.get(
   "/",
-  requirePermissions([permissionCodes.USERS_MANAGE]),
+  requirePermissions([permissionCodes.ACCESS_MANAGE]),
   asyncHandler(controller.listRoles.bind(controller)),
+);
+rolesRouter.get(
+  "/permissions",
+  requirePermissions([permissionCodes.ACCESS_MANAGE]),
+  asyncHandler(controller.listPermissions.bind(controller)),
+);
+rolesRouter.patch(
+  "/:id/permissions",
+  requirePermissions([permissionCodes.ACCESS_MANAGE]),
+  asyncHandler(controller.updateRolePermissions.bind(controller)),
 );

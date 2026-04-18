@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { roleLabels, userStatusOptions } from "@imobiliaria/shared";
+import { roleCodes, roleLabels, userStatusOptions } from "@imobiliaria/shared";
 import { Drawer } from "@/components/layout/drawer";
 import { FormInput } from "@/components/form/form-input";
 import { FormSelect } from "@/components/form/form-select";
@@ -11,12 +11,13 @@ import type { RoleItem, UserDetail, UserListItem } from "@/types/domain";
 
 const userSchema = z.object({
   fullName: z.string().trim().min(3, "Informe o nome completo."),
-  email: z.string().trim().email("Informe um email valido."),
+  email: z.string().trim().email("Informe um e-mail válido."),
   phone: z.string().trim().optional(),
   status: z.string().trim().min(1, "Selecione o status."),
   mustChangePassword: z.boolean(),
   password: z.string().trim().optional(),
   roleCodes: z.array(z.string()).min(1, "Selecione ao menos um perfil."),
+  tenantPortalTenantId: z.string().trim().optional(),
 });
 
 type UserFormValues = z.infer<typeof userSchema>;
@@ -24,6 +25,7 @@ type UserFormValues = z.infer<typeof userSchema>;
 type UserFormDrawerProps = {
   open: boolean;
   roles: RoleItem[];
+  tenantOptions: Array<{ value: string; label: string }>;
   initialData?: UserDetail | UserListItem | null;
   pending?: boolean;
   onClose: () => void;
@@ -34,6 +36,7 @@ type UserFormDrawerProps = {
     status: string;
     mustChangePassword: boolean;
     roleCodes: string[];
+    tenantPortalTenantId?: string | null;
     password?: string;
   }) => Promise<void>;
 };
@@ -47,6 +50,7 @@ function buildDefaults(initialData?: UserDetail | UserListItem | null): UserForm
     mustChangePassword: initialData?.mustChangePassword ?? true,
     password: "",
     roleCodes: initialData?.roleCodes ?? [],
+    tenantPortalTenantId: initialData?.tenantPortalTenantId ?? "",
   };
 }
 
@@ -58,6 +62,7 @@ function toNullable(value?: string) {
 export function UserFormDrawer({
   open,
   roles,
+  tenantOptions,
   initialData,
   pending,
   onClose,
@@ -80,8 +85,9 @@ export function UserFormDrawer({
     reset(buildDefaults(initialData));
   }, [initialData, reset]);
 
-  const roleCodes = watch("roleCodes");
+  const selectedRoleCodes = watch("roleCodes");
   const mustChangePassword = watch("mustChangePassword");
+  const needsTenantPortalLink = selectedRoleCodes.includes(roleCodes.TENANT_PORTAL);
 
   const submit = handleSubmit(async (values) => {
     if (!initialData) {
@@ -96,10 +102,17 @@ export function UserFormDrawer({
 
       if (normalizedPassword.length < 8) {
         setError("password", {
-          message: "A senha inicial deve ter no minimo 8 caracteres.",
+          message: "A senha inicial deve ter no mínimo 8 caracteres.",
         });
         return;
       }
+    }
+
+    if (needsTenantPortalLink && !values.tenantPortalTenantId?.trim()) {
+      setError("tenantPortalTenantId", {
+        message: "Selecione o locatário para habilitar o portal.",
+      });
+      return;
     }
 
     await onSubmit({
@@ -109,6 +122,9 @@ export function UserFormDrawer({
       status: values.status,
       mustChangePassword: values.mustChangePassword,
       roleCodes: values.roleCodes,
+      tenantPortalTenantId: needsTenantPortalLink
+        ? toNullable(values.tenantPortalTenantId)
+        : null,
       password: initialData ? undefined : values.password,
     });
   });
@@ -117,8 +133,8 @@ export function UserFormDrawer({
     <Drawer
       open={open}
       onClose={onClose}
-      title={initialData ? "Editar usuario" : "Novo usuario"}
-      description="Controle perfis, status operacional e politica de troca de senha."
+      title={initialData ? "Editar usuário" : "Novo usuário"}
+      description="Controle perfis, status operacional, política de troca de senha e acesso ao portal do locatário."
       footer={
         <div className="flex items-center justify-end gap-3">
           <button
@@ -134,7 +150,7 @@ export function UserFormDrawer({
             disabled={pending}
             className="primary-button disabled:opacity-60"
           >
-            {pending ? "Salvando..." : "Salvar usuario"}
+            {pending ? "Salvando..." : "Salvar usuário"}
           </button>
         </div>
       }
@@ -149,7 +165,7 @@ export function UserFormDrawer({
             />
           </div>
           <FormInput
-            label="Email"
+            label="E-mail"
             error={errors.email?.message}
             {...register("email")}
           />
@@ -171,6 +187,17 @@ export function UserFormDrawer({
               {...register("password")}
             />
           ) : null}
+          {needsTenantPortalLink ? (
+            <div className="md:col-span-2">
+              <FormSelect
+                label="Locatário vinculado ao portal"
+                options={tenantOptions}
+                placeholder="Selecione o locatário"
+                error={errors.tenantPortalTenantId?.message}
+                {...register("tenantPortalTenantId")}
+              />
+            </div>
+          ) : null}
         </div>
 
         <div className="space-y-3">
@@ -184,7 +211,7 @@ export function UserFormDrawer({
           </div>
           <div className="grid gap-3">
             {roles.map((role) => {
-              const checked = roleCodes.includes(role.code);
+              const checked = selectedRoleCodes.includes(role.code);
 
               return (
                 <button
@@ -194,8 +221,8 @@ export function UserFormDrawer({
                     setValue(
                       "roleCodes",
                       checked
-                        ? roleCodes.filter((code) => code !== role.code)
-                        : [...roleCodes, role.code],
+                        ? selectedRoleCodes.filter((code) => code !== role.code)
+                        : [...selectedRoleCodes, role.code],
                       { shouldValidate: true },
                     )
                   }
@@ -209,7 +236,7 @@ export function UserFormDrawer({
                     {roleLabels[role.code as keyof typeof roleLabels] ?? role.name}
                   </p>
                   <p className="mt-1 text-xs text-ink-500">
-                    {role.permissionCodes.length} permissoes herdadas
+                    {role.permissionCodes.length} permissões herdadas
                   </p>
                 </button>
               );
@@ -218,7 +245,7 @@ export function UserFormDrawer({
         </div>
 
         <FormSwitch
-          label="Exigir troca de senha no proximo acesso"
+          label="Exigir troca de senha no próximo acesso"
           checked={mustChangePassword}
           onChange={(checked) => setValue("mustChangePassword", checked)}
         />

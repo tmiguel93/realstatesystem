@@ -13,6 +13,7 @@ const envSchema = z.object({
   JWT_ACCESS_EXPIRES_IN: z.string().default("15m"),
   JWT_REFRESH_EXPIRES_IN: z.string().default("7d"),
   REFRESH_COOKIE_NAME: z.string().default("imob_refresh_token"),
+  UPLOADS_DIR: z.string().default("./storage/uploads"),
   SEED_ADMIN_EMAIL: z.string().email().optional(),
   SEED_ADMIN_PASSWORD: z.string().optional(),
 });
@@ -20,4 +21,3 @@ const envSchema = z.object({
 export const env = envSchema.parse(process.env);
 
 export const isProduction = env.NODE_ENV === "production";
-

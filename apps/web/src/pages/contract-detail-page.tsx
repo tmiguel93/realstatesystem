@@ -11,6 +11,7 @@ import {
 } from "@imobiliaria/shared";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/feedback/empty-state";
 import { PageHeader } from "@/components/feedback/page-header";
 import { SectionCard } from "@/components/feedback/section-card";
 import { StatusBadge } from "@/components/feedback/status-badge";
@@ -21,7 +22,13 @@ import { getOptionLabel } from "@/lib/options";
 import { resolveStatusTone } from "@/lib/status";
 import { contractsService } from "@/services/contracts-service";
 
-const BLOCKED_VERSION_STATUSES = ["ACTIVE", "TERMINATED", "CANCELLED", "EXPIRED", "RENEWED"];
+const BLOCKED_VERSION_STATUSES = [
+  "ACTIVE",
+  "TERMINATED",
+  "CANCELLED",
+  "EXPIRED",
+  "RENEWED",
+];
 
 export function ContractDetailPage() {
   const navigate = useNavigate();
@@ -47,8 +54,8 @@ export function ContractDetailPage() {
     onSuccess: async (_, variables) => {
       toast.success(
         variables.status === "FINALIZED"
-          ? "Versao finalizada com sucesso."
-          : "Versao revisada com sucesso.",
+          ? "Versão finalizada com sucesso."
+          : "Versão revisada com sucesso.",
       );
       await queryClient.invalidateQueries({ queryKey: ["contract-detail", contractId] });
       await queryClient.invalidateQueries({ queryKey: ["contracts"] });
@@ -83,6 +90,11 @@ export function ContractDetailPage() {
       )
     : false;
 
+  const canSimulateTermination = contract
+    ? hasPermission(permissionCodes.LEASE_TERMINATION_SIMULATE) &&
+      ["ACTIVE", "RENEWED", "PENDING_SIGNATURE"].includes(contract.status)
+    : false;
+
   const versionMetrics = useMemo(
     () => ({
       reviewPending:
@@ -94,7 +106,12 @@ export function ContractDetailPage() {
   );
 
   if (!contract) {
-    return null;
+    return (
+      <EmptyState
+        title="Contrato não encontrado"
+        description="Não foi possível localizar o contrato solicitado."
+      />
+    );
   }
 
   return (
@@ -111,16 +128,27 @@ export function ContractDetailPage() {
                 onClick={() =>
                   navigate(`${appRoutes.contractGenerator}?contractId=${contract.id}`)
                 }
-                className="rounded-2xl border border-ink-200 bg-white px-5 py-3 text-sm font-semibold text-ink-900 transition hover:border-brand-200 hover:text-brand-700"
+                className="secondary-button"
               >
-                Nova versao
+                Nova versão
+              </button>
+            ) : null}
+            {canSimulateTermination ? (
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(buildDetailPath(appRoutes.contractTerminationSimulate, contract.id))
+                }
+                className="secondary-button"
+              >
+                Simular baixa
               </button>
             ) : null}
             {canChangeStatus ? (
               <button
                 type="button"
                 onClick={() => setStatusDrawerOpen(true)}
-                className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-ink-950 transition hover:bg-sand-50"
+                className="secondary-button"
               >
                 Alterar status
               </button>
@@ -131,12 +159,15 @@ export function ContractDetailPage() {
 
       <div className="grid gap-5 md:grid-cols-4">
         {[
-          { label: "Versoes", value: contract.metrics.versionCount },
+          { label: "Versões", value: contract.metrics.versionCount },
           { label: "Rascunhos pendentes", value: versionMetrics.reviewPending },
-          { label: "Versoes finalizadas", value: versionMetrics.finalized },
+          { label: "Versões finalizadas", value: versionMetrics.finalized },
           {
-            label: "Dias para o termino",
-            value: contract.metrics.daysToEnd >= 0 ? contract.metrics.daysToEnd : "Prazo encerrado",
+            label: "Dias para o término",
+            value:
+              contract.metrics.daysToEnd >= 0
+                ? contract.metrics.daysToEnd
+                : "Prazo encerrado",
           },
         ].map((item) => (
           <SectionCard key={item.label}>
@@ -168,7 +199,7 @@ export function ContractDetailPage() {
               <p className="text-xs uppercase tracking-[0.18em] text-ink-400">Reajuste</p>
               <p className="mt-2 text-sm text-ink-800">
                 {getOptionLabel(adjustmentIndexOptions, contract.adjustmentIndex)} a cada{" "}
-                {contract.adjustmentFrequencyMonths} mes(es)
+                {contract.adjustmentFrequencyMonths} mês(es)
               </p>
             </div>
             <div>
@@ -178,9 +209,9 @@ export function ContractDetailPage() {
               </p>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-ink-400">Vigencia</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-ink-400">Vigência</p>
               <p className="mt-2 text-sm text-ink-800">
-                {formatDate(contract.startDate)} ate {formatDate(contract.endDate)}
+                {formatDate(contract.startDate)} até {formatDate(contract.endDate)}
               </p>
             </div>
             <div>
@@ -188,20 +219,20 @@ export function ContractDetailPage() {
               <p className="mt-2 text-sm text-ink-800">
                 {contract.lateFeePercentage !== null
                   ? `${contract.lateFeePercentage}%`
-                  : "Nao informada"}
+                  : "Não informada"}
               </p>
             </div>
           </div>
 
           <div className="mt-6 rounded-3xl border border-amber-200 bg-amber-50 px-5 py-5 text-sm text-amber-900">
-            Minuta parametrizada com base interna. A validacao juridica continua obrigatoria antes do uso final.
+            Minuta parametrizada com base interna. A validação jurídica continua obrigatória antes do uso final.
           </div>
         </SectionCard>
 
         <SectionCard title="Partes e origem">
           <div className="space-y-4 text-sm text-ink-700">
             <div>
-              <p className="font-semibold text-ink-900">Imovel</p>
+              <p className="font-semibold text-ink-900">Imóvel</p>
               <p className="mt-1">
                 {contract.property.code} · {contract.property.title}
               </p>
@@ -216,7 +247,7 @@ export function ContractDetailPage() {
               <p className="mt-1 text-ink-500">{contract.owner.document}</p>
             </div>
             <div>
-              <p className="font-semibold text-ink-900">Locatario</p>
+              <p className="font-semibold text-ink-900">Locatário</p>
               <p className="mt-1">{contract.tenant.fullName}</p>
               <p className="mt-1 text-ink-500">{contract.tenant.document}</p>
             </div>
@@ -231,12 +262,17 @@ export function ContractDetailPage() {
                 </Link>
               </div>
             ) : null}
+            {contract.terminationReason ? (
+              <div className="rounded-[20px] border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
+                Motivo da baixa: {contract.terminationReason}
+              </div>
+            ) : null}
           </div>
         </SectionCard>
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
-        <SectionCard title="Historico de versoes">
+        <SectionCard title="Histórico de versões">
           <div className="space-y-3">
             {contract.versions.map((version) => (
               <article
@@ -246,7 +282,7 @@ export function ContractDetailPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-semibold text-ink-950">
-                      Versao {version.versionNumber}
+                      Versão {version.versionNumber}
                     </p>
                     <p className="mt-1 text-sm text-ink-500">
                       Criada em {formatDate(version.createdAt)}
@@ -262,7 +298,7 @@ export function ContractDetailPage() {
                   Criada por {version.createdByUser.fullName}
                   {version.reviewedByUser
                     ? ` · revisada por ${version.reviewedByUser.fullName}`
-                    : " · ainda sem responsavel de revisao"}
+                    : " · ainda sem responsável de revisão"}
                 </p>
 
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -277,7 +313,7 @@ export function ContractDetailPage() {
                             status: "REVIEWED",
                           })
                         }
-                        className="rounded-2xl border border-ink-200 bg-white px-3 py-2 text-sm font-semibold text-ink-700 transition hover:border-brand-200 hover:text-brand-700"
+                        className="secondary-button px-3 py-2"
                       >
                         Revisar
                       </button>
@@ -289,7 +325,7 @@ export function ContractDetailPage() {
                             status: "FINALIZED",
                           })
                         }
-                        className="rounded-2xl bg-ink-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-brand-700"
+                        className="primary-button px-3 py-2"
                       >
                         Finalizar
                       </button>
@@ -307,7 +343,7 @@ export function ContractDetailPage() {
                           `${contract.code.toLowerCase()}-v${version.versionNumber}.pdf`,
                         )
                       }
-                      className="rounded-2xl border border-ink-200 bg-white px-3 py-2 text-sm font-semibold text-ink-700 transition hover:border-brand-200 hover:text-brand-700"
+                      className="secondary-button px-3 py-2"
                     >
                       Exportar PDF
                     </button>
@@ -319,8 +355,8 @@ export function ContractDetailPage() {
         </SectionCard>
 
         <SectionCard
-          title={latestVersion ? `Preview da versao ${latestVersion.versionNumber}` : "Preview"}
-          description="A visualizacao abaixo corresponde ao HTML renderizado da ultima versao registrada."
+          title={latestVersion ? `Preview da versão ${latestVersion.versionNumber}` : "Preview"}
+          description="A visualização abaixo corresponde ao HTML renderizado da última versão registrada."
         >
           {latestVersion ? (
             <div className="rounded-[28px] border border-ink-200 bg-white p-6 shadow-sm">

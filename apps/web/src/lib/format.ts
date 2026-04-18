@@ -1,6 +1,6 @@
 export function formatCurrency(value?: number | null) {
   if (value === null || value === undefined) {
-    return "Nao informado";
+    return "Não informado";
   }
 
   return new Intl.NumberFormat("pt-BR", {
@@ -11,7 +11,7 @@ export function formatCurrency(value?: number | null) {
 
 export function formatDate(value?: string | Date | null) {
   if (!value) {
-    return "Nao informado";
+    return "Não informado";
   }
 
   return new Intl.DateTimeFormat("pt-BR").format(new Date(value));
@@ -19,7 +19,7 @@ export function formatDate(value?: string | Date | null) {
 
 export function formatDateTime(value?: string | Date | null) {
   if (!value) {
-    return "Nao informado";
+    return "Não informado";
   }
 
   return new Intl.DateTimeFormat("pt-BR", {

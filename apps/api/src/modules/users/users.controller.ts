@@ -3,6 +3,7 @@ import {
   userIdParamSchema,
   userPayloadSchema,
   userResetPasswordSchema,
+  rolePermissionUpdateSchema,
   userStatusPayloadSchema,
   usersListQuerySchema,
   userUpdatePayloadSchema,
@@ -67,6 +68,22 @@ export class UsersController {
 
   async listRoles(_request: Request, response: Response) {
     const result = await usersService.listRoles();
+    return response.status(200).json(result);
+  }
+
+  async listPermissions(_request: Request, response: Response) {
+    const result = await usersService.listPermissions();
+    return response.status(200).json(result);
+  }
+
+  async updateRolePermissions(request: Request, response: Response) {
+    const params = userIdParamSchema.parse(request.params);
+    const payload = rolePermissionUpdateSchema.parse(request.body);
+    const result = await usersService.updateRolePermissions(
+      params.id,
+      payload.permissionCodes,
+      getRequestContext(request),
+    );
     return response.status(200).json(result);
   }
 

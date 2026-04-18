@@ -57,15 +57,15 @@ export function ContractsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Gestao contratual"
+        eyebrow="Gestão contratual"
         title="Contratos ativos"
-        description="Acompanhe minutas, revisoes, assinatura pendente, contratos vigentes e alertas de vencimento."
+        description="Acompanhe minutas, revisões, assinatura pendente, contratos vigentes e alertas de vencimento."
         actions={
           hasPermission(permissionCodes.CONTRACTS_GENERATE) ? (
             <button
               type="button"
               onClick={() => navigate(appRoutes.contractGenerator)}
-            className="secondary-button"
+              className="secondary-button"
             >
               Gerar contrato
             </button>
@@ -75,7 +75,7 @@ export function ContractsPage() {
 
       <div className="grid gap-5 md:grid-cols-3">
         {[
-          { label: "Ativos na pagina", value: metrics.active },
+          { label: "Ativos na página", value: metrics.active },
           { label: "Pendentes de fechamento", value: metrics.pending },
           { label: "Alertas de vencimento", value: metrics.expiring },
         ].map((item) => (
@@ -88,7 +88,7 @@ export function ContractsPage() {
 
       <SectionCard
         title="Filtro contratual"
-        description="Busque por codigo, imovel, locador ou locatario e destaque contratos proximos do vencimento."
+        description="Busque por código, imóvel, locador ou locatário e destaque contratos próximos do vencimento."
       >
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px_220px]">
           <input
@@ -97,7 +97,7 @@ export function ContractsPage() {
               setSearch(event.target.value);
               setPage(1);
             }}
-            placeholder="Buscar por codigo, imovel, locador ou locatario"
+            placeholder="Buscar por código, imóvel, locador ou locatário"
             className="filter-control"
           />
           <select
@@ -127,7 +127,7 @@ export function ContractsPage() {
                 : "border-ink-200 bg-white text-ink-700"
             }`}
           >
-            {onlyExpiring ? "Mostrando vencimento" : "Somente a vencer"}
+            {onlyExpiring ? "Mostrando a vencer" : "Somente a vencer"}
           </button>
         </div>
       </SectionCard>
@@ -135,41 +135,41 @@ export function ContractsPage() {
       {contracts.length ? (
         <SectionCard
           title="Lista operacional"
-          description="Cada contrato preserva o historico de versoes, responsavel pela revisao e status atual."
+          description="Cada contrato preserva o histórico de versões, o responsável pela revisão e o status atual."
         >
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-ink-200">
+            <table className="data-table">
               <thead>
-                <tr className="text-left text-xs uppercase tracking-[0.18em] text-ink-400">
-                  <th className="pb-4 pr-4 font-medium">Contrato</th>
-                  <th className="pb-4 pr-4 font-medium">Imovel</th>
-                  <th className="pb-4 pr-4 font-medium">Partes</th>
-                  <th className="pb-4 pr-4 font-medium">Vigencia</th>
-                  <th className="pb-4 pr-4 font-medium">Status</th>
-                  <th className="pb-4 pr-4 font-medium">Ultima versao</th>
-                  <th className="pb-4 font-medium">Acoes</th>
+                <tr>
+                  <th>Contrato</th>
+                  <th>Imóvel</th>
+                  <th>Partes</th>
+                  <th>Vigência</th>
+                  <th>Status</th>
+                  <th>Última versão</th>
+                  <th className="text-right">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-ink-100 text-sm text-ink-700">
+              <tbody>
                 {contracts.map((contract) => (
-                  <tr key={contract.id} className="align-top">
-                    <td className="py-4 pr-4">
+                  <tr key={contract.id}>
+                    <td>
                       <p className="font-semibold text-ink-950">{contract.code}</p>
                       <p className="mt-1 text-ink-500">
                         {formatCurrency(contract.rentAmount)} · dia {contract.dueDay}
                       </p>
                     </td>
-                    <td className="py-4 pr-4">
+                    <td>
                       <p className="font-medium text-ink-900">{contract.property.title}</p>
                       <p className="mt-1 text-ink-500">{contract.property.code}</p>
                     </td>
-                    <td className="py-4 pr-4">
+                    <td>
                       <p>Locador: {contract.owner.fullName}</p>
-                      <p className="mt-1">Locatario: {contract.tenant.fullName}</p>
+                      <p className="mt-1">Locatário: {contract.tenant.fullName}</p>
                     </td>
-                    <td className="py-4 pr-4">
+                    <td>
                       <p>
-                        {formatDate(contract.startDate)} ate {formatDate(contract.endDate)}
+                        {formatDate(contract.startDate)} até {formatDate(contract.endDate)}
                       </p>
                       <p
                         className={`mt-1 ${
@@ -181,39 +181,56 @@ export function ContractsPage() {
                           : "Prazo encerrado"}
                       </p>
                     </td>
-                    <td className="py-4 pr-4">
+                    <td>
                       <StatusBadge
                         label={getOptionLabel(contractStatusOptions, contract.status)}
                         tone={resolveStatusTone(contract.status)}
                       />
                     </td>
-                    <td className="py-4 pr-4">
+                    <td>
                       {contract.latestVersion ? (
                         <>
                           <p className="font-medium text-ink-900">
-                            Versao {contract.latestVersion.versionNumber}
+                            Versão {contract.latestVersion.versionNumber}
                           </p>
                           <p className="mt-1 text-ink-500">
                             {contract.latestVersion.reviewedByUser?.fullName ??
-                              "Sem responsavel de revisao"}
+                              "Sem responsável de revisão"}
                           </p>
                         </>
                       ) : (
-                        <span className="text-ink-500">Sem versao</span>
+                        <span className="text-ink-500">Sem versão</span>
                       )}
                     </td>
-                    <td className="py-4">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          navigate(
-                            buildDetailPath(appRoutes.contractDetail, contract.id),
-                          )
-                        }
-                        className="rounded-2xl border border-ink-200 bg-white px-4 py-2 text-sm font-semibold text-ink-700 transition hover:border-brand-200 hover:text-brand-700"
-                      >
-                        Abrir detalhe
-                      </button>
+                    <td>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate(buildDetailPath(appRoutes.contractDetail, contract.id))
+                          }
+                          className="secondary-button px-3 py-2"
+                        >
+                          Abrir detalhe
+                        </button>
+                        {hasPermission(permissionCodes.LEASE_TERMINATION_SIMULATE) &&
+                        ["ACTIVE", "RENEWED", "PENDING_SIGNATURE"].includes(contract.status) ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              navigate(
+                                buildDetailPath(
+                                  appRoutes.contractTerminationSimulate,
+                                  contract.id,
+                                ),
+                              )
+                            }
+                            className="primary-button px-3 py-2"
+                          >
+                            Simular baixa
+                          </button>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -232,7 +249,7 @@ export function ContractsPage() {
       ) : (
         <EmptyState
           title="Nenhum contrato encontrado"
-          description="A partir daqui voce acompanha minutas, assinatura pendente, vigencia e vencimento."
+          description="A partir daqui você acompanha minutas, assinatura pendente, vigência e vencimento."
           action={
             hasPermission(permissionCodes.CONTRACTS_GENERATE) ? (
               <button

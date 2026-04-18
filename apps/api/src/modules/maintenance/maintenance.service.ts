@@ -2,6 +2,7 @@ import {
   AuditEntityType,
   ContractStatus,
   DocumentCategory,
+  MaintenanceSeveritySourceType,
   MaintenanceTicketHistoryActionType,
   MaintenanceTicketStatus,
   MaintenanceTicketType,
@@ -25,8 +26,11 @@ import {
   getOpenDays,
   isMaintenanceTerminalStatus,
   resolveSlaDueDate,
-  resolveUrgencyForMaintenanceType,
 } from "./maintenance.rules";
+import {
+  maintenanceSeverityEvaluator,
+  type MaintenanceSeverityResult,
+} from "./maintenance-severity-evaluator";
 
 type Tx = Prisma.TransactionClient;
 
@@ -70,6 +74,7 @@ type MaintenanceCreatePayload = {
   assignedToUserId?: string | null;
   internalNotes?: string | null;
   attachments: AttachmentInput[];
+  openedViaTenantPortal?: boolean;
 };
 
 type MaintenanceUpdatePayload = Partial<MaintenanceCreatePayload>;
@@ -147,6 +152,8 @@ function mapTicketBase(ticket: {
   description: string;
   type: MaintenanceTicketType;
   urgencyLevel: number;
+  severitySourceType: MaintenanceSeveritySourceType;
+  severityJustification: string | null;
   status: MaintenanceTicketStatus;
   propertyId: string;
   tenantId: string | null;
@@ -179,6 +186,8 @@ function mapTicketBase(ticket: {
     type: ticket.type,
     urgencyLevel: ticket.urgencyLevel,
     urgencyLabel: getMaintenanceUrgencyLabel(ticket.urgencyLevel),
+    severitySourceType: ticket.severitySourceType,
+    severityJustification: ticket.severityJustification,
     status: ticket.status,
     statusLabel: getMaintenanceStatusLabel(ticket.status),
     createdAt: ticket.createdAt,
@@ -366,6 +375,17 @@ export class MaintenanceService {
             },
           },
         },
+        severityAssessments: {
+          orderBy: { evaluatedAt: "desc" },
+          include: {
+            evaluatedByUser: {
+              select: {
+                id: true,
+                fullName: true,
+              },
+            },
+          },
+        },
         documents: {
           where: {
             category: DocumentCategory.MAINTENANCE_ATTACHMENT,
@@ -402,6 +422,8 @@ export class MaintenanceService {
       resolutionSummary: ticket.resolutionSummary,
       cancelReason: ticket.cancelReason,
       lastStatusChangeAt: ticket.lastStatusChangeAt,
+      severitySourceType: ticket.severitySourceType,
+      severityJustification: ticket.severityJustification,
       property: {
         ...mapTicketBase(ticket).property,
         street: ticket.property.street,
@@ -423,6 +445,14 @@ export class MaintenanceService {
         newValue: item.newValue,
         createdAt: item.createdAt,
         user: item.user,
+      })),
+      severityAssessments: ticket.severityAssessments.map((item) => ({
+        id: item.id,
+        sourceType: item.sourceType,
+        score: item.score,
+        justification: item.justification,
+        evaluatedAt: item.evaluatedAt,
+        evaluatedByUser: item.evaluatedByUser,
       })),
       metrics: {
         historyCount: ticket._count.history,
@@ -518,8 +548,10 @@ export class MaintenanceService {
           propertyContext.activeTenant?.id ?? null,
           canOverride,
         );
-        const urgencyLevel = await this.resolveUrgencyLevel({
+        const severity = await this.evaluateSeverity({
           type: payload.type,
+          description: payload.description,
+          attachments: payload.attachments,
           requestedUrgencyLevel: payload.urgencyLevel,
           canOverride,
         });
@@ -535,7 +567,9 @@ export class MaintenanceService {
             title: payload.title.trim(),
             description: payload.description.trim(),
             type: payload.type,
-            urgencyLevel,
+            urgencyLevel: severity.score,
+            severitySourceType: severity.sourceType,
+            severityJustification: severity.justification,
             status: MaintenanceTicketStatus.OPEN,
             propertyCodeSnapshot: propertyContext.property.code,
             propertyTitleSnapshot: propertyContext.property.title,
@@ -546,6 +580,7 @@ export class MaintenanceService {
                 ? propertyContext.activeTenant?.fullName ?? null
                 : await this.getTenantNameById(tx, tenantId),
             internalNotes: normalizeOptionalString(payload.internalNotes),
+            openedViaTenantPortal: payload.openedViaTenantPortal ?? false,
           },
           include: {
             openedByUser: {
@@ -579,9 +614,17 @@ export class MaintenanceService {
               title: createdTicket.title,
               type: createdTicket.type,
               urgencyLevel: createdTicket.urgencyLevel,
+              severityJustification: createdTicket.severityJustification,
             },
           },
         });
+
+        await this.registerSeverityAssessment(
+          tx,
+          createdTicket.id,
+          severity,
+          context.actorUserId,
+        );
 
         await this.syncAttachments(
           tx,
@@ -592,7 +635,7 @@ export class MaintenanceService {
 
         if (
           payload.urgencyLevel &&
-          payload.urgencyLevel !== resolveUrgencyForMaintenanceType(payload.type)
+          payload.urgencyLevel !== severity.automaticScore
         ) {
           await this.auditUrgencyOverride(
             createdTicket.id,
@@ -600,7 +643,8 @@ export class MaintenanceService {
             context,
             {
               requestedUrgencyLevel: payload.urgencyLevel,
-              automaticUrgencyLevel: resolveUrgencyForMaintenanceType(payload.type),
+              automaticUrgencyLevel: severity.automaticScore,
+              justification: severity.justification,
             },
           );
         }
@@ -613,6 +657,7 @@ export class MaintenanceService {
           {
             type: createdTicket.type,
             urgencyLevel: createdTicket.urgencyLevel,
+            severitySourceType: createdTicket.severitySourceType,
           },
         );
 
@@ -651,6 +696,8 @@ export class MaintenanceService {
             description: true,
             type: true,
             urgencyLevel: true,
+            severitySourceType: true,
+            severityJustification: true,
             internalNotes: true,
             propertyCodeSnapshot: true,
             propertyTitleSnapshot: true,
@@ -684,16 +731,23 @@ export class MaintenanceService {
           payload.assignedToUserId,
         );
         const resolvedType = payload.type ?? existing.type;
-        const resolvedUrgencyLevel = await this.resolveUrgencyLevel({
+        const severity = await this.evaluateSeverity({
           type: resolvedType,
+          description: payload.description ?? existing.description,
+          attachments: payload.attachments ?? [],
           requestedUrgencyLevel:
             payload.urgencyLevel === undefined
               ? existing.urgencyLevel
               : payload.urgencyLevel,
           canOverride,
           preserveWhenUnchanged:
-            payload.type === undefined && payload.urgencyLevel === undefined,
+            payload.type === undefined &&
+            payload.urgencyLevel === undefined &&
+            payload.description === undefined &&
+            payload.attachments === undefined,
           currentUrgencyLevel: existing.urgencyLevel,
+          currentSeveritySourceType: existing.severitySourceType,
+          currentSeverityJustification: existing.severityJustification,
         });
 
         const updatedTicket = await tx.maintenanceTicket.update({
@@ -708,7 +762,9 @@ export class MaintenanceService {
             title: payload.title?.trim() ?? existing.title,
             description: payload.description?.trim() ?? existing.description,
             type: resolvedType,
-            urgencyLevel: resolvedUrgencyLevel,
+            urgencyLevel: severity.score,
+            severitySourceType: severity.sourceType,
+            severityJustification: severity.justification,
             internalNotes:
               payload.internalNotes === undefined
                 ? existing.internalNotes
@@ -825,7 +881,7 @@ export class MaintenanceService {
           });
         }
 
-        if (resolvedUrgencyLevel !== existing.urgencyLevel) {
+        if (severity.score !== existing.urgencyLevel) {
           await tx.maintenanceTicketHistory.create({
             data: {
               maintenanceTicketId: id,
@@ -833,7 +889,11 @@ export class MaintenanceService {
               actionType: MaintenanceTicketHistoryActionType.URGENCY_CHANGED,
               description: "Grau de urgencia do chamado foi ajustado.",
               oldValue: { urgencyLevel: existing.urgencyLevel },
-              newValue: { urgencyLevel: resolvedUrgencyLevel },
+              newValue: {
+                urgencyLevel: severity.score,
+                severitySourceType: severity.sourceType,
+                severityJustification: severity.justification,
+              },
             },
           });
         }
@@ -864,13 +924,29 @@ export class MaintenanceService {
         );
 
         if (
+          payload.type !== undefined ||
+          payload.description !== undefined ||
+          payload.urgencyLevel !== undefined
+        ) {
+          await this.registerSeverityAssessment(
+            tx,
+            id,
+            severity,
+            severity.sourceType === MaintenanceSeveritySourceType.MANUAL
+              ? context.actorUserId
+              : undefined,
+          );
+        }
+
+        if (
           payload.urgencyLevel !== undefined &&
           payload.urgencyLevel !== null &&
-          payload.urgencyLevel !== resolveUrgencyForMaintenanceType(resolvedType)
+          payload.urgencyLevel !== severity.automaticScore
         ) {
           await this.auditUrgencyOverride(id, existing.ticketId, context, {
             requestedUrgencyLevel: payload.urgencyLevel,
-            automaticUrgencyLevel: resolveUrgencyForMaintenanceType(resolvedType),
+            automaticUrgencyLevel: severity.automaticScore,
+            justification: severity.justification,
           });
         }
 
@@ -883,6 +959,19 @@ export class MaintenanceService {
     } catch (error) {
       rethrowPrismaError(error, "Falha ao atualizar chamado de manutencao.");
     }
+  }
+
+  async createFromPortal(
+    payload: MaintenanceCreatePayload,
+    context: RequestContext,
+  ) {
+    return this.create(
+      {
+        ...payload,
+        openedViaTenantPortal: true,
+      },
+      context,
+    );
   }
 
   async updateStatus(
@@ -1607,25 +1696,44 @@ export class MaintenanceService {
     return tenant?.fullName ?? null;
   }
 
-  private async resolveUrgencyLevel(input: {
+  private async evaluateSeverity(input: {
     type: MaintenanceTicketType;
+    description: string;
+    attachments: AttachmentInput[];
     requestedUrgencyLevel?: number | null;
     canOverride: boolean;
     preserveWhenUnchanged?: boolean;
     currentUrgencyLevel?: number;
+    currentSeveritySourceType?: MaintenanceSeveritySourceType;
+    currentSeverityJustification?: string | null;
   }) {
     if (input.preserveWhenUnchanged) {
-      return input.currentUrgencyLevel ?? resolveUrgencyForMaintenanceType(input.type);
+      return {
+        score: input.currentUrgencyLevel ?? 1,
+        automaticScore: input.currentUrgencyLevel ?? 1,
+        justification:
+          input.currentSeverityJustification ??
+          "Classificação preservada da avaliação anterior.",
+        sourceType:
+          input.currentSeveritySourceType ?? MaintenanceSeveritySourceType.RULE,
+      };
     }
 
-    const automaticUrgencyLevel = resolveUrgencyForMaintenanceType(input.type);
+    const automaticSeverity = await maintenanceSeverityEvaluator.evaluate({
+      type: input.type,
+      description: input.description,
+      attachmentCount: input.attachments.length,
+    });
 
     if (
       input.requestedUrgencyLevel === undefined ||
       input.requestedUrgencyLevel === null ||
-      input.requestedUrgencyLevel === automaticUrgencyLevel
+      input.requestedUrgencyLevel === automaticSeverity.score
     ) {
-      return automaticUrgencyLevel;
+      return {
+        ...automaticSeverity,
+        automaticScore: automaticSeverity.score,
+      };
     }
 
     if (!input.canOverride) {
@@ -1635,7 +1743,29 @@ export class MaintenanceService {
       );
     }
 
-    return input.requestedUrgencyLevel;
+    return {
+      score: input.requestedUrgencyLevel,
+      automaticScore: automaticSeverity.score,
+      justification: `Classificação manual aplicada a partir da avaliação automática (${automaticSeverity.score}/5). ${automaticSeverity.justification}`,
+      sourceType: MaintenanceSeveritySourceType.MANUAL,
+    };
+  }
+
+  private async registerSeverityAssessment(
+    tx: Tx,
+    maintenanceTicketId: string,
+    severity: MaintenanceSeverityResult,
+    evaluatedByUserId?: string,
+  ) {
+    await tx.maintenanceSeverityAssessment.create({
+      data: {
+        maintenanceTicketId,
+        sourceType: severity.sourceType,
+        score: severity.score,
+        justification: severity.justification,
+        evaluatedByUserId: evaluatedByUserId ?? null,
+      },
+    });
   }
 
   private async generateTicketId(tx: Tx | typeof prisma) {

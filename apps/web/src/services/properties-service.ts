@@ -34,6 +34,11 @@ type PropertyPayload = {
   isPublished: boolean;
 };
 
+type PropertyImageUpdatePayload = {
+  altText?: string | null;
+  isCover?: boolean;
+};
+
 type PropertyListQuery = {
   accessToken: string;
   page: number;
@@ -88,5 +93,63 @@ export const propertiesService = {
     );
     return data;
   },
-};
 
+  async uploadImages(accessToken: string, propertyId: string, files: File[]) {
+    const formData = new FormData();
+
+    files.forEach((file) => {
+      formData.append("files", file);
+    });
+
+    const { data } = await api.post(
+      `/properties/${propertyId}/images`,
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "multipart/form-data",
+        },
+      },
+    );
+
+    return data;
+  },
+
+  async updateImage(
+    accessToken: string,
+    propertyId: string,
+    imageId: string,
+    payload: PropertyImageUpdatePayload,
+  ) {
+    const { data } = await api.patch(
+      `/properties/${propertyId}/images/${imageId}`,
+      payload,
+      authHeader(accessToken),
+    );
+
+    return data;
+  },
+
+  async reorderImages(
+    accessToken: string,
+    propertyId: string,
+    imageIds: string[],
+  ) {
+    const { data } = await api.patch(
+      `/properties/${propertyId}/images/reorder`,
+      { imageIds },
+      authHeader(accessToken),
+    );
+
+    return data;
+  },
+
+  async removeImage(accessToken: string, propertyId: string, imageId: string) {
+    const { data } = await api.delete(
+      `/properties/${propertyId}/images/${imageId}`,
+      authHeader(accessToken),
+    );
+
+    return data;
+  },
+};

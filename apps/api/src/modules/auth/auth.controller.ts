@@ -6,6 +6,7 @@ import {
   loginSchema,
   refreshSchema,
   resetPasswordSchema,
+  userPreferencesSchema,
 } from "./auth.schemas";
 
 const authService = new AuthService();
@@ -108,5 +109,15 @@ export class AuthController {
 
     return response.status(200).json(user);
   }
-}
 
+  async updatePreferences(request: Request, response: Response) {
+    const payload = userPreferencesSchema.parse(request.body);
+    const user = await authService.updatePreferences(
+      request.auth!.userId,
+      payload,
+      getRequestContext(request),
+    );
+
+    return response.status(200).json(user);
+  }
+}

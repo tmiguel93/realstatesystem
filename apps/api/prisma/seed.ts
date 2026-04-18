@@ -4,7 +4,9 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import {
   allPermissions,
+  permissionLabels,
   roleCodes,
+  roleLabels,
   rolePermissionMap,
 } from "@imobiliaria/shared";
 
@@ -33,12 +35,13 @@ async function main() {
       update: {
         resource,
         action,
+        description: permissionLabels[permissionCode] ?? permissionCode,
       },
       create: {
         code: permissionCode,
         resource,
         action,
-        description: `Permissao para ${permissionCode}`,
+        description: permissionLabels[permissionCode] ?? permissionCode,
       },
     });
   }
@@ -47,16 +50,14 @@ async function main() {
     await prisma.role.upsert({
       where: { code: roleCode },
       update: {
-        name: roleCode === roleCodes.MASTER_ADMIN ? "Master Admin" : "Usuario Operacional",
+        name: roleLabels[roleCode] ?? roleCode,
+        description: `Perfil sistêmico ${roleLabels[roleCode] ?? roleCode}.`,
         isSystem: true,
       },
       create: {
         code: roleCode,
-        name: roleCode === roleCodes.MASTER_ADMIN ? "Master Admin" : "Usuario Operacional",
-        description:
-          roleCode === roleCodes.MASTER_ADMIN
-            ? "Perfil com acesso total ao sistema."
-            : "Perfil operacional com acesso limitado.",
+        name: roleLabels[roleCode] ?? roleCode,
+        description: `Perfil sistêmico ${roleLabels[roleCode] ?? roleCode}.`,
         isSystem: true,
       },
     });
@@ -94,12 +95,16 @@ async function main() {
       fullName: "Administrador Master",
       passwordHash: adminPasswordHash,
       status: "ACTIVE",
+      preferredLocale: "PT_BR",
+      preferredTheme: "SYSTEM",
     },
     create: {
       fullName: "Administrador Master",
       email: adminEmail,
       passwordHash: adminPasswordHash,
       status: "ACTIVE",
+      preferredLocale: "PT_BR",
+      preferredTheme: "SYSTEM",
     },
   });
 
@@ -124,15 +129,19 @@ async function main() {
   const operationalUser = await prisma.user.upsert({
     where: { email: "operacional@imobiliaria.local" },
     update: {
-      fullName: "Usuario Operacional",
+      fullName: "Usuário Operacional",
       passwordHash: adminPasswordHash,
       status: "ACTIVE",
+      preferredLocale: "PT_BR",
+      preferredTheme: "SYSTEM",
     },
     create: {
-      fullName: "Usuario Operacional",
+      fullName: "Usuário Operacional",
       email: "operacional@imobiliaria.local",
       passwordHash: adminPasswordHash,
       status: "ACTIVE",
+      preferredLocale: "PT_BR",
+      preferredTheme: "SYSTEM",
     },
   });
 
@@ -154,10 +163,49 @@ async function main() {
     },
   });
 
-  console.log("Seed concluido.");
+  await prisma.leaseTerminationRule.upsert({
+    where: { id: "00000000-0000-0000-0000-000000000001" },
+    update: {
+      name: "Regra padrão de rescisão locatícia",
+      penaltyPercentage: 10,
+      proportionalByRemainingTime: true,
+      allowManualAdjustments: true,
+      additionalRulesJson: {
+        defaultAdditionalCharges: [],
+        defaultDiscounts: [],
+        formula:
+          "multa_base * proporcao_do_tempo_restante + adicionais - descontos",
+      },
+      standardNotes:
+        "A memória de cálculo deve ser validada administrativamente antes da conclusão.",
+      legalSupportText:
+        "Esta simulação possui caráter operacional e não substitui revisão jurídica.",
+      active: true,
+    },
+    create: {
+      id: "00000000-0000-0000-0000-000000000001",
+      name: "Regra padrão de rescisão locatícia",
+      penaltyPercentage: 10,
+      proportionalByRemainingTime: true,
+      allowManualAdjustments: true,
+      additionalRulesJson: {
+        defaultAdditionalCharges: [],
+        defaultDiscounts: [],
+        formula:
+          "multa_base * proporcao_do_tempo_restante + adicionais - descontos",
+      },
+      standardNotes:
+        "A memória de cálculo deve ser validada administrativamente antes da conclusão.",
+      legalSupportText:
+        "Esta simulação possui caráter operacional e não substitui revisão jurídica.",
+      active: true,
+    },
+  });
+
+  console.log("Seed concluído.");
   console.log(`Admin: ${adminEmail}`);
   console.log("Senha inicial definida pelo .env.");
-  console.log("Usuario operacional: operacional@imobiliaria.local");
+  console.log("Usuário operacional: operacional@imobiliaria.local");
 }
 
 main()

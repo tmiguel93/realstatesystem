@@ -1,3 +1,4 @@
+import path from "node:path";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import express from "express";
@@ -17,6 +18,7 @@ import { rentLeadsRouter } from "./modules/rent-leads/rent-leads.routes";
 import { saleLeadsRouter } from "./modules/sale-leads/sale-leads.routes";
 import { systemRouter } from "./modules/system/system.routes";
 import { tenantsRouter } from "./modules/tenants/tenants.routes";
+import { tenantPortalRouter } from "./modules/tenant-portal/tenant-portal.routes";
 import { rolesRouter, usersRouter } from "./modules/users/users.routes";
 import { visitsRouter } from "./modules/visits/visits.routes";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware";
@@ -42,6 +44,10 @@ export function createApp() {
   );
   app.use(cookieParser());
   app.use(express.json({ limit: "2mb" }));
+  app.use(
+    "/uploads",
+    express.static(path.resolve(process.cwd(), env.UPLOADS_DIR)),
+  );
 
   app.use("/api/system", systemRouter);
   app.use("/api/auth", authRouter);
@@ -58,6 +64,7 @@ export function createApp() {
   app.use("/api/contracts", contractsRouter);
   app.use("/api/users", usersRouter);
   app.use("/api/roles", rolesRouter);
+  app.use("/api/tenant-portal", tenantPortalRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

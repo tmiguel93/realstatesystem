@@ -4,6 +4,7 @@ import { HttpError } from "../../core/http-error";
 import { buildPaginationMeta, resolvePagination } from "../../core/pagination";
 import { createAuditLog } from "../../core/audit";
 import { rethrowPrismaError } from "../../core/prisma-error";
+import { storageAdapter } from "../../shared/storage/local-storage-adapter";
 
 type PropertiesListQuery = {
   page?: number;
@@ -76,6 +77,14 @@ type PropertyPayload = {
   isPublished: boolean;
 };
 
+type PropertyImagePayload = {
+  fileUrl: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  altText?: string | null;
+};
+
 function normalizeOptionalString(value?: string | null) {
   if (!value) {
     return null;
@@ -107,6 +116,10 @@ function mapPropertyBase(property: {
   rentPrice: Prisma.Decimal | null;
   isPublished: boolean;
   owner: { id: string; fullName: string };
+  propertyImages: Array<{
+    fileUrl: string;
+    isCover: boolean;
+  }>;
   _count: {
     contracts: number;
     visits: number;
@@ -127,6 +140,10 @@ function mapPropertyBase(property: {
     rentPrice: toNumber(property.rentPrice),
     isPublished: property.isPublished,
     owner: property.owner,
+    coverImageUrl:
+      property.propertyImages.find((image) => image.isCover)?.fileUrl ??
+      property.propertyImages[0]?.fileUrl ??
+      null,
     contractCount: property._count.contracts,
     visitCount: property._count.visits,
     keyCount: property._count.propertyKeys,
@@ -166,6 +183,14 @@ export class PropertiesService {
             select: {
               id: true,
               fullName: true,
+            },
+          },
+          propertyImages: {
+            orderBy: [{ isCover: "desc" }, { orderIndex: "asc" }],
+            take: 3,
+            select: {
+              fileUrl: true,
+              isCover: true,
             },
           },
           _count: {
@@ -242,6 +267,9 @@ export class PropertiesService {
             },
           },
         },
+        propertyImages: {
+          orderBy: [{ isCover: "desc" }, { orderIndex: "asc" }],
+        },
       },
     });
 
@@ -271,6 +299,235 @@ export class PropertiesService {
     };
   }
 
+  async addImages(
+    propertyId: string,
+    images: PropertyImagePayload[],
+    context: RequestContext,
+  ) {
+    await this.ensurePropertyExists(propertyId);
+
+    if (!images.length) {
+      throw new HttpError(422, "Envie ao menos uma imagem válida.");
+    }
+
+    const existingImages = await prisma.propertyImage.findMany({
+      where: { propertyId },
+      orderBy: { orderIndex: "asc" },
+      select: {
+        id: true,
+        isCover: true,
+        orderIndex: true,
+      },
+    });
+
+    const nextOrderIndex =
+      existingImages.reduce(
+        (highestOrder, image) => Math.max(highestOrder, image.orderIndex),
+        -1,
+      ) + 1;
+    const hasCover = existingImages.some((image) => image.isCover);
+
+    const createdImages = await prisma.$transaction(async (tx) => {
+      const created = await Promise.all(
+        images.map((image, index) =>
+          tx.propertyImage.create({
+            data: {
+              propertyId,
+              fileUrl: image.fileUrl,
+              fileName: image.fileName,
+              mimeType: image.mimeType,
+              sizeBytes: image.sizeBytes,
+              altText: normalizeOptionalString(image.altText),
+              isCover: !hasCover && index === 0,
+              orderIndex: nextOrderIndex + index,
+              uploadedByUserId: context.actorUserId ?? null,
+            },
+          }),
+        ),
+      );
+
+      await createAuditLog({
+        actorUserId: context.actorUserId,
+        action: "properties.images.upload",
+        entityType: AuditEntityType.PROPERTY_IMAGE,
+        entityId: propertyId,
+        description: `Novas fotos foram adicionadas ao imóvel.`,
+        metadata: {
+          count: created.length,
+          fileNames: created.map((item) => item.fileName),
+        },
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+      });
+
+      return created;
+    });
+
+    return createdImages;
+  }
+
+  async updateImage(
+    propertyId: string,
+    imageId: string,
+    payload: { altText?: string | null; isCover?: boolean },
+    context: RequestContext,
+  ) {
+    const existingImage = await prisma.propertyImage.findFirst({
+      where: {
+        id: imageId,
+        propertyId,
+      },
+    });
+
+    if (!existingImage) {
+      throw new HttpError(404, "Imagem do imóvel não encontrada.");
+    }
+
+    const updatedImage = await prisma.$transaction(async (tx) => {
+      if (payload.isCover) {
+        await tx.propertyImage.updateMany({
+          where: {
+            propertyId,
+            isCover: true,
+            id: { not: imageId },
+          },
+          data: { isCover: false },
+        });
+      }
+
+      return tx.propertyImage.update({
+        where: { id: imageId },
+        data: {
+          altText:
+            payload.altText === undefined
+              ? existingImage.altText
+              : normalizeOptionalString(payload.altText),
+          isCover: payload.isCover ?? existingImage.isCover,
+        },
+      });
+    });
+
+    await createAuditLog({
+      actorUserId: context.actorUserId,
+      action: "properties.images.update",
+      entityType: AuditEntityType.PROPERTY_IMAGE,
+      entityId: imageId,
+      description: "Metadados da imagem do imóvel foram atualizados.",
+      metadata: payload,
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent,
+    });
+
+    return updatedImage;
+  }
+
+  async reorderImages(
+    propertyId: string,
+    imageIds: string[],
+    context: RequestContext,
+  ) {
+    const images = await prisma.propertyImage.findMany({
+      where: { propertyId },
+      select: {
+        id: true,
+      },
+    });
+
+    if (images.length !== imageIds.length) {
+      throw new HttpError(
+        422,
+        "A reordenação deve considerar todas as imagens do imóvel.",
+      );
+    }
+
+    const imageIdSet = new Set(images.map((image) => image.id));
+    const hasInvalidImage = imageIds.some((imageId) => !imageIdSet.has(imageId));
+
+    if (hasInvalidImage) {
+      throw new HttpError(422, "A lista de imagens contém itens inválidos.");
+    }
+
+    await prisma.$transaction(
+      imageIds.map((imageId, index) =>
+        prisma.propertyImage.update({
+          where: { id: imageId },
+          data: {
+            orderIndex: index,
+          },
+        }),
+      ),
+    );
+
+    await createAuditLog({
+      actorUserId: context.actorUserId,
+      action: "properties.images.reorder",
+      entityType: AuditEntityType.PROPERTY_IMAGE,
+      entityId: propertyId,
+      description: "A ordem da galeria do imóvel foi atualizada.",
+      metadata: { imageIds },
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent,
+    });
+
+    return prisma.propertyImage.findMany({
+      where: { propertyId },
+      orderBy: [{ isCover: "desc" }, { orderIndex: "asc" }],
+    });
+  }
+
+  async removeImage(propertyId: string, imageId: string, context: RequestContext) {
+    const image = await prisma.propertyImage.findFirst({
+      where: {
+        id: imageId,
+        propertyId,
+      },
+    });
+
+    if (!image) {
+      throw new HttpError(404, "Imagem do imóvel não encontrada.");
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.propertyImage.delete({
+        where: { id: imageId },
+      });
+
+      if (image.isCover) {
+        const nextImage = await tx.propertyImage.findFirst({
+          where: { propertyId },
+          orderBy: { orderIndex: "asc" },
+        });
+
+        if (nextImage) {
+          await tx.propertyImage.update({
+            where: { id: nextImage.id },
+            data: {
+              isCover: true,
+            },
+          });
+        }
+      }
+    });
+
+    await storageAdapter.deleteFile(image.fileUrl);
+
+    await createAuditLog({
+      actorUserId: context.actorUserId,
+      action: "properties.images.remove",
+      entityType: AuditEntityType.PROPERTY_IMAGE,
+      entityId: imageId,
+      description: "Uma foto foi removida da galeria do imóvel.",
+      metadata: { propertyId, fileName: image.fileName },
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent,
+    });
+
+    return {
+      id: imageId,
+      removed: true,
+    };
+  }
+
   async create(payload: PropertyPayload, context: RequestContext) {
     await this.ensureOwnerExists(payload.ownerId);
     this.validateBusinessRules(payload);
@@ -283,6 +540,14 @@ export class PropertiesService {
             select: {
               id: true,
               fullName: true,
+            },
+          },
+          propertyImages: {
+            orderBy: [{ isCover: "desc" }, { orderIndex: "asc" }],
+            take: 3,
+            select: {
+              fileUrl: true,
+              isCover: true,
             },
           },
           _count: {
@@ -316,6 +581,14 @@ export class PropertiesService {
             select: {
               id: true,
               fullName: true,
+            },
+          },
+          propertyImages: {
+            orderBy: [{ isCover: "desc" }, { orderIndex: "asc" }],
+            take: 3,
+            select: {
+              fileUrl: true,
+              isCover: true,
             },
           },
           _count: {
@@ -370,6 +643,17 @@ export class PropertiesService {
 
     if (!owner) {
       throw new HttpError(404, "Proprietario vinculado nao encontrado.");
+    }
+  }
+
+  private async ensurePropertyExists(propertyId: string) {
+    const property = await prisma.property.findUnique({
+      where: { id: propertyId },
+      select: { id: true },
+    });
+
+    if (!property) {
+      throw new HttpError(404, "Imóvel informado não foi encontrado.");
     }
   }
 
@@ -436,4 +720,3 @@ export class PropertiesService {
     });
   }
 }
-

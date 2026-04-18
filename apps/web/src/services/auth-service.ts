@@ -49,5 +49,21 @@ export const authService = {
 
     return data;
   },
-};
 
+  async updatePreferences(
+    accessToken: string,
+    payload: Pick<AuthUser, "preferredTheme" | "preferredLocale">,
+  ) {
+    const { data } = await api.patch<AuthUser>(
+      "/auth/preferences",
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
+    );
+
+    return data;
+  },
+};

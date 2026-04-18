@@ -17,8 +17,11 @@ type AuthContextValue = {
   status: AuthStatus;
   accessToken: string | null;
   user: AuthUser | null;
-  login: (payload: LoginPayload) => Promise<void>;
+  login: (payload: LoginPayload) => Promise<AuthUser>;
   logout: () => Promise<void>;
+  updatePreferences: (
+    payload: Pick<AuthUser, "preferredTheme" | "preferredLocale">,
+  ) => Promise<void>;
   hasPermission: (permission: string) => boolean;
 };
 
@@ -52,6 +55,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setUser(result.user);
     setStatus("authenticated");
     toast.success(`Bem-vindo de volta, ${result.user.fullName.split(" ")[0]}.`);
+    return result.user;
   }, []);
 
   const logout = useCallback(async () => {
@@ -63,9 +67,21 @@ export function AuthProvider({ children }: PropsWithChildren) {
       setAccessToken(null);
       setUser(null);
       setStatus("unauthenticated");
-      toast.success("Sessao encerrada.");
+      toast.success("Sessão encerrada.");
     }
   }, [accessToken]);
+
+  const updatePreferences = useCallback(
+    async (payload: Pick<AuthUser, "preferredTheme" | "preferredLocale">) => {
+      if (!accessToken) {
+        return;
+      }
+
+      const updatedUser = await authService.updatePreferences(accessToken, payload);
+      setUser(updatedUser);
+    },
+    [accessToken],
+  );
 
   const hasPermission = useCallback(
     (permission: string) => user?.permissions.includes(permission) ?? false,
@@ -79,9 +95,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
       user,
       login,
       logout,
+      updatePreferences,
       hasPermission,
     }),
-    [status, accessToken, user, login, logout, hasPermission],
+    [status, accessToken, user, login, logout, updatePreferences, hasPermission],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -96,4 +113,3 @@ export function useAuth() {
 
   return context;
 }
-

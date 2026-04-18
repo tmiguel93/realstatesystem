@@ -143,10 +143,68 @@ export const contractVersionParamsSchema = z.object({
   versionId: z.string().uuid("Versao invalida."),
 });
 
+const leaseTerminationLineItemSchema = z.object({
+  label: z.string().trim().min(2, "Informe um rótulo válido."),
+  amount: z.coerce.number().nonnegative("Informe um valor válido."),
+});
+
+export const leaseTerminationRulePayloadSchema = z.object({
+  id: z.string().uuid().optional(),
+  name: z.string().trim().min(3, "Informe o nome da regra."),
+  penaltyPercentage: z.coerce
+    .number()
+    .min(0, "O percentual não pode ser negativo.")
+    .max(100, "O percentual não pode ser maior que 100."),
+  proportionalByRemainingTime: z.boolean().default(true),
+  allowManualAdjustments: z.boolean().default(true),
+  additionalCharges: z.array(leaseTerminationLineItemSchema).default([]),
+  discounts: z.array(leaseTerminationLineItemSchema).default([]),
+  formulaDescription: z
+    .string()
+    .trim()
+    .min(4, "Informe a descrição da fórmula.")
+    .default("multa_base * proporção do tempo restante + adicionais - descontos"),
+  standardNotes: optionalString,
+  legalSupportText: optionalString,
+  active: z.boolean().default(true),
+});
+
+export const leaseTerminationSimulationPayloadSchema = z.object({
+  ruleId: optionalUuid,
+  manualPenaltyPercentage: z.coerce
+    .number()
+    .min(0, "O percentual manual não pode ser negativo.")
+    .max(100, "O percentual manual não pode ser maior que 100.")
+    .nullable()
+    .optional(),
+  additionalCharges: z.array(leaseTerminationLineItemSchema).default([]),
+  discounts: z.array(leaseTerminationLineItemSchema).default([]),
+  reason: optionalString,
+  notes: optionalString,
+});
+
+export const leaseTerminationConfirmPayloadSchema = z.object({
+  simulationId: z.string().uuid("Selecione uma simulação válida."),
+  reason: z
+    .string()
+    .trim()
+    .min(3, "Informe o motivo da baixa contratual."),
+  finalNotes: optionalString,
+});
+
 export type ContractPayloadInput = z.infer<typeof contractPayloadSchema>;
 export type ContractReviewPayloadInput = z.infer<
   typeof contractReviewPayloadSchema
 >;
 export type ContractStatusPayloadInput = z.infer<
   typeof contractStatusPayloadSchema
+>;
+export type LeaseTerminationRulePayloadInput = z.infer<
+  typeof leaseTerminationRulePayloadSchema
+>;
+export type LeaseTerminationSimulationPayloadInput = z.infer<
+  typeof leaseTerminationSimulationPayloadSchema
+>;
+export type LeaseTerminationConfirmPayloadInput = z.infer<
+  typeof leaseTerminationConfirmPayloadSchema
 >;

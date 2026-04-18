@@ -2,6 +2,7 @@ import { api } from "@/lib/api";
 import type {
   AssignableUser,
   PaginatedUsers,
+  PermissionItem,
   RoleItem,
   UserDetail,
 } from "@/types/domain";
@@ -13,6 +14,7 @@ type CreateUserPayload = {
   status: string;
   mustChangePassword: boolean;
   roleCodes: string[];
+  tenantPortalTenantId?: string | null;
   password?: string;
 };
 
@@ -92,6 +94,27 @@ export const usersService = {
   async listRoles(accessToken: string) {
     const { data } = await api.get<RoleItem[]>("/roles", authHeader(accessToken));
     return data;
+  },
+
+  async listPermissions(accessToken: string) {
+    const { data } = await api.get<PermissionItem[]>(
+      "/roles/permissions",
+      authHeader(accessToken),
+    );
+    return data;
+  },
+
+  async updateRolePermissions(
+    accessToken: string,
+    roleId: string,
+    permissionCodes: string[],
+  ) {
+    const { data } = await api.patch(
+      `/roles/${roleId}/permissions`,
+      { permissionCodes },
+      authHeader(accessToken),
+    );
+    return data as RoleItem[];
   },
 
   async listAssignable(accessToken: string) {

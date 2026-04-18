@@ -10,41 +10,41 @@ const config: Config = {
       },
       colors: {
         brand: {
-          50: "#eef8f5",
-          100: "#d7eee6",
-          200: "#b1dfcf",
-          300: "#84c8b0",
-          400: "#56ab8d",
-          500: "#2e8b6e",
-          600: "#226d57",
-          700: "#1e5646",
-          800: "#1b4539",
-          900: "#183930"
+          50: "rgb(var(--color-brand-50) / <alpha-value>)",
+          100: "rgb(var(--color-brand-100) / <alpha-value>)",
+          200: "rgb(var(--color-brand-200) / <alpha-value>)",
+          300: "rgb(var(--color-brand-300) / <alpha-value>)",
+          400: "rgb(var(--color-brand-400) / <alpha-value>)",
+          500: "rgb(var(--color-brand-500) / <alpha-value>)",
+          600: "rgb(var(--color-brand-600) / <alpha-value>)",
+          700: "rgb(var(--color-brand-700) / <alpha-value>)",
+          800: "rgb(var(--color-brand-800) / <alpha-value>)",
+          900: "rgb(var(--color-brand-900) / <alpha-value>)",
         },
         ink: {
-          50: "#f6f7f7",
-          100: "#e9ebeb",
-          200: "#d1d8d8",
-          300: "#a9b6b5",
-          400: "#7a8c8b",
-          500: "#5f6f6d",
-          600: "#4b5858",
-          700: "#404a4b",
-          800: "#363d3e",
-          900: "#2b3031",
-          950: "#17211f"
+          50: "rgb(var(--color-ink-50) / <alpha-value>)",
+          100: "rgb(var(--color-ink-100) / <alpha-value>)",
+          200: "rgb(var(--color-ink-200) / <alpha-value>)",
+          300: "rgb(var(--color-ink-300) / <alpha-value>)",
+          400: "rgb(var(--color-ink-400) / <alpha-value>)",
+          500: "rgb(var(--color-ink-500) / <alpha-value>)",
+          600: "rgb(var(--color-ink-600) / <alpha-value>)",
+          700: "rgb(var(--color-ink-700) / <alpha-value>)",
+          800: "rgb(var(--color-ink-800) / <alpha-value>)",
+          900: "rgb(var(--color-ink-900) / <alpha-value>)",
+          950: "rgb(var(--color-ink-950) / <alpha-value>)",
         },
         sand: {
-          50: "#fbf8f3",
-          100: "#f3ede1",
-          200: "#e8dbc1",
-          300: "#dbc091",
-          400: "#cfa160",
-          500: "#c1853f",
-          600: "#ac6d34",
-          700: "#8f542d",
-          800: "#75442b",
-          900: "#613928"
+          50: "rgb(var(--color-sand-50) / <alpha-value>)",
+          100: "rgb(var(--color-sand-100) / <alpha-value>)",
+          200: "rgb(var(--color-sand-200) / <alpha-value>)",
+          300: "rgb(var(--color-sand-300) / <alpha-value>)",
+          400: "rgb(var(--color-sand-400) / <alpha-value>)",
+          500: "rgb(var(--color-sand-500) / <alpha-value>)",
+          600: "rgb(var(--color-sand-600) / <alpha-value>)",
+          700: "rgb(var(--color-sand-700) / <alpha-value>)",
+          800: "rgb(var(--color-sand-800) / <alpha-value>)",
+          900: "rgb(var(--color-sand-900) / <alpha-value>)",
         }
       },
       boxShadow: {
@@ -72,4 +72,3 @@ const config: Config = {
 };
 
 export default config;
-

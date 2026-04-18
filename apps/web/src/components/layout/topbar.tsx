@@ -1,17 +1,30 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, ChevronDown, LogOut, Search } from "lucide-react";
+import {
+  Bell,
+  ChevronDown,
+  Globe2,
+  LogOut,
+  MoonStar,
+  Search,
+  SunMedium,
+} from "lucide-react";
 import { appRoutes } from "@imobiliaria/shared";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { useAuth } from "@/features/auth/auth-context";
+import { useI18n } from "@/features/preferences/language-provider";
+import { useTheme } from "@/features/preferences/theme-provider";
 import { buildDetailPath, formatDateTime } from "@/lib/format";
 import { notificationsService } from "@/services/notifications-service";
 
 export function Topbar() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { accessToken, user, logout } = useAuth();
+  const { accessToken, user, logout, updatePreferences } = useAuth();
+  const { locale, setLocale, t } = useI18n();
+  const { themePreference, resolvedTheme, setThemePreference } = useTheme();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   const notificationsQuery = useQuery({
@@ -47,28 +60,84 @@ export function Topbar() {
     }
   };
 
+  const persistPreferences = async (payload: {
+    preferredTheme: "SYSTEM" | "LIGHT" | "DARK";
+    preferredLocale: "PT_BR" | "EN" | "ES";
+  }) => {
+    try {
+      await updatePreferences(payload);
+      toast.success(t("common.preferencesSaved"));
+    } catch {
+      toast.error(t("common.preferencesError"));
+    }
+  };
+
+  const nextThemePreference =
+    themePreference === "SYSTEM"
+      ? "LIGHT"
+      : themePreference === "LIGHT"
+        ? "DARK"
+        : "SYSTEM";
+
   return (
     <motion.header
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-      className="flex flex-wrap items-center justify-between gap-4 rounded-[28px] border border-white/75 bg-white/72 px-5 py-4 shadow-[0_18px_40px_-28px_rgba(24,57,48,0.18)] backdrop-blur-xl"
+      className="flex flex-wrap items-center justify-between gap-4 rounded-[28px] border border-white/10 bg-[var(--panel-bg)] px-5 py-4 shadow-soft backdrop-blur-xl"
     >
-      <div className="flex min-w-[280px] flex-1 items-center gap-3 rounded-[22px] border border-ink-200/80 bg-[#fcfbf8] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.92)]">
+      <div className="flex min-w-[280px] flex-1 items-center gap-3 rounded-[22px] border border-ink-200/80 bg-[var(--field-bg)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
         <span className="grid size-9 place-items-center rounded-xl bg-brand-50 text-brand-700">
           <Search size={17} />
         </span>
         <input
           className="w-full bg-transparent text-sm text-ink-900 outline-none placeholder:text-ink-400"
-          placeholder="Buscar imovel, lead, visita, contrato ou cliente"
+          placeholder={t("common.searchPlaceholder")}
         />
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2 rounded-[22px] border border-ink-200/80 bg-[var(--elevated-bg)] px-3 py-2">
+          <button
+            type="button"
+            onClick={() => {
+              setThemePreference(nextThemePreference);
+              void persistPreferences({
+                preferredTheme: nextThemePreference,
+                preferredLocale: locale,
+              });
+            }}
+            className="grid size-10 place-items-center rounded-2xl text-ink-600 transition hover:bg-brand-50 hover:text-brand-700"
+            title={t("layout.themeToggleTitle")}
+          >
+            {resolvedTheme === "dark" ? <SunMedium size={18} /> : <MoonStar size={18} />}
+          </button>
+
+          <div className="flex items-center gap-2 rounded-2xl bg-brand-50/70 px-3 py-2 text-sm font-medium text-brand-700">
+            <Globe2 size={16} />
+            <select
+              value={locale}
+              onChange={(event) => {
+                const nextLocale = event.target.value as "PT_BR" | "EN" | "ES";
+                setLocale(nextLocale);
+                void persistPreferences({
+                  preferredTheme: themePreference,
+                  preferredLocale: nextLocale,
+                });
+              }}
+              className="bg-transparent pr-1 outline-none"
+            >
+              <option value="PT_BR">PT-BR</option>
+              <option value="EN">EN</option>
+              <option value="ES">ES</option>
+            </select>
+          </div>
+        </div>
+
         <div className="relative">
           <button
             onClick={() => setNotificationsOpen((current) => !current)}
-            className="relative grid size-11 place-items-center rounded-2xl border border-ink-200/80 bg-white/92 text-ink-600 transition duration-200 hover:-translate-y-px hover:border-brand-200 hover:text-brand-700"
+            className="relative grid size-11 place-items-center rounded-2xl border border-ink-200/80 bg-[var(--elevated-bg)] text-ink-600 transition duration-200 hover:-translate-y-px hover:border-brand-200 hover:text-brand-700"
           >
             <Bell size={18} />
             {unreadCount > 0 ? (
@@ -85,17 +154,19 @@ export function Topbar() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 6 }}
                 transition={{ duration: 0.18 }}
-                className="absolute right-0 z-30 mt-3 w-[380px] rounded-[28px] border border-white/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,245,239,0.95))] p-4 shadow-[0_28px_54px_-28px_rgba(24,57,48,0.3)]"
+                className="absolute right-0 z-30 mt-3 w-[380px] rounded-[28px] border border-white/10 bg-[var(--panel-bg)] p-4 shadow-[0_28px_54px_-28px_rgba(0,0,0,0.34)]"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="font-display text-2xl text-ink-950">Alertas</p>
+                    <p className="font-display text-2xl text-ink-950">
+                      {t("layout.notificationsTitle")}
+                    </p>
                     <p className="mt-1 text-sm text-ink-500">
-                      Chamados vencidos no SLA e itens que seguem em aberto.
+                      {t("layout.notificationsDescription")}
                     </p>
                   </div>
-                  <span className="rounded-full border border-ink-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-ink-500">
-                    {unreadCount} nao lida(s)
+                  <span className="rounded-full border border-ink-200 bg-[var(--elevated-bg)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-ink-500">
+                    {t("layout.alertsCount", { count: unreadCount })}
                   </span>
                 </div>
 
@@ -106,7 +177,7 @@ export function Topbar() {
                         key={notification.id}
                         type="button"
                         onClick={() => void openNotification(notification)}
-                        className="w-full rounded-[24px] border border-ink-200 bg-white px-4 py-4 text-left transition hover:border-brand-200"
+                        className="w-full rounded-[24px] border border-ink-200 bg-[var(--elevated-bg)] px-4 py-4 text-left transition hover:border-brand-200"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div>
@@ -128,7 +199,7 @@ export function Topbar() {
                     ))
                   ) : (
                     <div className="rounded-[24px] border border-dashed border-ink-200 px-4 py-8 text-center text-sm text-ink-500">
-                      Nenhuma notificacao operacional no momento.
+                      {t("layout.notificationsEmpty")}
                     </div>
                   )}
                 </div>
@@ -137,7 +208,7 @@ export function Topbar() {
           </AnimatePresence>
         </div>
 
-        <div className="flex items-center gap-3 rounded-[24px] border border-ink-200/80 bg-white/92 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.92)]">
+        <div className="flex items-center gap-3 rounded-[24px] border border-ink-200/80 bg-[var(--elevated-bg)] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
           <div className="grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-sand-300 to-brand-500 font-display text-sm text-white shadow-[0_14px_30px_-20px_rgba(34,109,87,0.58)]">
             {user?.fullName
               .split(" ")
@@ -158,7 +229,7 @@ export function Topbar() {
           <button
             onClick={() => void logout()}
             className="grid size-10 place-items-center rounded-xl text-ink-500 transition duration-200 hover:bg-ink-50 hover:text-ink-900"
-            title="Sair"
+            title={t("common.logout")}
           >
             <LogOut size={18} />
           </button>

@@ -55,3 +55,18 @@ export const propertyIdParamSchema = z.object({
   id: z.string().uuid("Identificador invalido."),
 });
 
+export const propertyImageIdParamSchema = z.object({
+  id: z.string().uuid("Identificador do imóvel inválido."),
+  imageId: z.string().uuid("Identificador da imagem inválido."),
+});
+
+export const propertyImageUpdateSchema = z.object({
+  altText: optionalString,
+  isCover: z.boolean().optional(),
+});
+
+export const propertyImageReorderSchema = z.object({
+  imageIds: z
+    .array(z.string().uuid("Informe imagens válidas para reordenação."))
+    .min(1, "Informe ao menos uma imagem para reordenar."),
+});

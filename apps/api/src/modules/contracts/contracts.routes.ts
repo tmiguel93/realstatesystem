@@ -17,6 +17,16 @@ contractsRouter.get(
   asyncHandler(controller.list.bind(controller)),
 );
 contractsRouter.get(
+  "/termination/rules",
+  requirePermissions([permissionCodes.LEASE_TERMINATION_SIMULATE]),
+  asyncHandler(controller.listTerminationRules.bind(controller)),
+);
+contractsRouter.post(
+  "/termination/rules",
+  requirePermissions([permissionCodes.LEASE_TERMINATION_RULES_MANAGE]),
+  asyncHandler(controller.saveTerminationRule.bind(controller)),
+);
+contractsRouter.get(
   "/:id",
   requirePermissions([permissionCodes.CONTRACTS_READ]),
   asyncHandler(controller.getById.bind(controller)),
@@ -45,4 +55,14 @@ contractsRouter.patch(
   "/:id/status",
   requirePermissions([permissionCodes.CONTRACTS_REVIEW]),
   asyncHandler(controller.updateStatus.bind(controller)),
+);
+contractsRouter.post(
+  "/:id/termination/simulate",
+  requirePermissions([permissionCodes.LEASE_TERMINATION_SIMULATE]),
+  asyncHandler(controller.simulateTermination.bind(controller)),
+);
+contractsRouter.post(
+  "/:id/termination/confirm",
+  requirePermissions([permissionCodes.LEASE_TERMINATION_EXECUTE]),
+  asyncHandler(controller.confirmTermination.bind(controller)),
 );

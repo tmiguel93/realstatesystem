@@ -23,6 +23,7 @@ export const userPayloadSchema = z.object({
   status: z.nativeEnum(UserStatus).default(UserStatus.ACTIVE),
   mustChangePassword: z.boolean().default(true),
   roleCodes: z.array(z.string().trim().min(1)).min(1, "Selecione ao menos um perfil."),
+  tenantPortalTenantId: z.string().uuid().optional().nullable(),
   password: passwordSchema.optional(),
 });
 
@@ -43,3 +44,8 @@ export const userResetPasswordSchema = z.object({
   mustChangePassword: z.boolean().default(true),
 });
 
+export const rolePermissionUpdateSchema = z.object({
+  permissionCodes: z
+    .array(z.string().trim().min(1))
+    .min(1, "Selecione ao menos uma permissão."),
+});

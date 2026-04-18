@@ -11,102 +11,119 @@ import {
   KeyRound,
   LayoutDashboard,
   Settings,
+  ShieldCheck,
   UserCog,
   Users,
   Wrench,
 } from "lucide-react";
-import { cn } from "@/lib/cn";
 import { useAuth } from "@/features/auth/auth-context";
+import { useI18n } from "@/features/preferences/language-provider";
+import { cn } from "@/lib/cn";
 
 const items = [
   {
-    section: "Visao",
-    label: "Dashboard",
+    section: "layout.sections.overview",
+    label: "layout.menu.dashboard",
     to: appRoutes.dashboard,
     icon: LayoutDashboard,
     permission: permissionCodes.DASHBOARD_READ,
   },
   {
-    section: "Cadastros",
-    label: "Imoveis",
+    section: "layout.sections.registry",
+    label: "layout.menu.properties",
     to: appRoutes.properties,
     icon: Home,
     permission: permissionCodes.PROPERTIES_READ,
   },
   {
-    section: "Cadastros",
-    label: "Proprietarios",
+    section: "layout.sections.registry",
+    label: "layout.menu.owners",
     to: appRoutes.owners,
     icon: Building2,
     permission: permissionCodes.OWNERS_READ,
   },
   {
-    section: "Cadastros",
-    label: "Locatarios",
+    section: "layout.sections.registry",
+    label: "layout.menu.tenants",
     to: appRoutes.tenants,
     icon: Users,
     permission: permissionCodes.TENANTS_READ,
   },
   {
-    section: "Operacao",
-    label: "Vendas",
+    section: "layout.sections.operation",
+    label: "layout.menu.sales",
     to: appRoutes.sales,
     icon: HandCoins,
     permission: permissionCodes.SALE_LEADS_READ,
   },
   {
-    section: "Operacao",
-    label: "Locacao",
+    section: "layout.sections.operation",
+    label: "layout.menu.rents",
     to: appRoutes.rents,
     icon: FileSpreadsheet,
     permission: permissionCodes.RENT_LEADS_READ,
   },
   {
-    section: "Operacao",
-    label: "Visitas",
+    section: "layout.sections.operation",
+    label: "layout.menu.visits",
     to: appRoutes.visits,
     icon: CalendarCheck2,
     permission: permissionCodes.VISITS_READ,
   },
   {
-    section: "Operacao",
-    label: "Chaves",
+    section: "layout.sections.operation",
+    label: "layout.menu.keys",
     to: appRoutes.keys,
     icon: KeyRound,
     permission: permissionCodes.KEYS_READ,
   },
   {
-    section: "Operacao",
-    label: "Manutencao",
+    section: "layout.sections.operation",
+    label: "layout.menu.maintenance",
     to: appRoutes.maintenanceDashboard,
     icon: Wrench,
     permission: permissionCodes.MAINTENANCE_READ,
   },
   {
-    section: "Gestao",
-    label: "Contratos",
+    section: "layout.sections.management",
+    label: "layout.menu.contracts",
     to: appRoutes.contracts,
     icon: FileText,
     permission: permissionCodes.CONTRACTS_READ,
   },
   {
-    section: "Gestao",
-    label: "Usuarios",
+    section: "layout.sections.management",
+    label: "layout.menu.users",
     to: appRoutes.users,
     icon: UserCog,
     permission: permissionCodes.USERS_MANAGE,
   },
   {
-    section: "Gestao",
-    label: "Configuracoes",
+    section: "layout.sections.management",
+    label: "layout.menu.access",
+    to: appRoutes.accessManagement,
+    icon: ShieldCheck,
+    permission: permissionCodes.ACCESS_MANAGE,
+  },
+  {
+    section: "layout.sections.management",
+    label: "layout.menu.settings",
     to: appRoutes.settings,
     icon: Settings,
-    permission: permissionCodes.SETTINGS_MANAGE,
+    permission: permissionCodes.PREFERENCES_MANAGE,
   },
-];
+  {
+    section: "layout.sections.tenant",
+    label: "layout.menu.tenantPortal",
+    to: appRoutes.tenantPortal,
+    icon: Wrench,
+    permission: permissionCodes.TENANT_PORTAL_ACCESS,
+  },
+] as const;
 
 export function SidebarNav() {
   const { hasPermission } = useAuth();
+  const { t } = useI18n();
   type NavItem = (typeof items)[number];
 
   const groupedItems = items
@@ -132,7 +149,7 @@ export function SidebarNav() {
           }}
         >
           <p className="mb-3 px-3 text-[11px] uppercase tracking-[0.3em] text-ink-400">
-            {section}
+            {t(section)}
           </p>
 
           <div className="space-y-2">
@@ -157,7 +174,7 @@ export function SidebarNav() {
                           "group flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm transition-all duration-200",
                           isActive
                             ? "border-ink-950 bg-ink-950 text-white shadow-[0_18px_38px_-26px_rgba(24,57,48,0.58)]"
-                            : "border-transparent text-ink-700 hover:border-ink-200 hover:bg-white/88 hover:text-ink-950",
+                            : "border-transparent text-ink-700 hover:border-ink-200 hover:bg-white/10 hover:text-ink-950",
                         )}
                       >
                         <span
@@ -173,7 +190,7 @@ export function SidebarNav() {
 
                         <div className="min-w-0 flex-1">
                           <p className="truncate font-medium text-current">
-                            {item.label}
+                            {t(item.label)}
                           </p>
                         </div>
                       </div>

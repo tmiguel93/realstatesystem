@@ -8,7 +8,7 @@ export function getOptionLabel(
   value?: string | null,
 ) {
   if (!value) {
-    return "Nao informado";
+    return "Não informado";
   }
 
   return options.find((option) => option.value === value)?.label ?? value;

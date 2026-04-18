@@ -149,6 +149,7 @@ export type PropertyListItem = {
     id: string;
     fullName: string;
   };
+  coverImageUrl: string | null;
   contractCount: number;
   visitCount: number;
   keyCount: number;
@@ -193,6 +194,17 @@ export type PropertyDetail = {
     phone: string | null;
     email: string | null;
   };
+  propertyImages: Array<{
+    id: string;
+    fileUrl: string;
+    fileName: string;
+    mimeType: string;
+    sizeBytes: number;
+    altText: string | null;
+    isCover: boolean;
+    orderIndex: number;
+    createdAt: string;
+  }>;
   metrics: {
     contractCount: number;
     visitCount: number;
@@ -240,10 +252,13 @@ export type UserListItem = {
   createdAt: string;
   roleCodes: string[];
   permissionCount: number;
+  tenantPortalTenantId: string | null;
 };
 
 export type UserDetail = UserListItem & {
   permissions: string[];
+  preferredTheme: "SYSTEM" | "LIGHT" | "DARK";
+  preferredLocale: "PT_BR" | "EN" | "ES";
   auditLogs: Array<{
     id: string;
     action: string;
@@ -258,6 +273,14 @@ export type RoleItem = {
   name: string;
   description: string | null;
   permissionCodes: string[];
+};
+
+export type PermissionItem = {
+  id: string;
+  code: string;
+  resource: string;
+  action: string;
+  description: string | null;
 };
 
 export type AssignableUser = {
@@ -614,6 +637,8 @@ export type MaintenanceTicketListItem = {
   type: string;
   urgencyLevel: number;
   urgencyLabel: string;
+  severitySourceType: string;
+  severityJustification: string | null;
   status: string;
   statusLabel: string;
   createdAt: string;
@@ -652,6 +677,17 @@ export type MaintenanceTicketDetail = MaintenanceTicketListItem & {
   resolutionSummary: string | null;
   cancelReason: string | null;
   lastStatusChangeAt: string;
+  severityAssessments: Array<{
+    id: string;
+    sourceType: string;
+    score: number;
+    justification: string;
+    evaluatedAt: string;
+    evaluatedByUser: {
+      id: string;
+      fullName: string;
+    } | null;
+  }>;
   property: MaintenanceTicketListItem["property"] & {
     street: string;
     streetNumber: string;
@@ -780,6 +816,101 @@ export type MaintenanceDashboard = {
   }>;
   criticalTickets: MaintenanceTicketListItem[];
   refreshedAt: string;
+};
+
+export type TenantPortalOverview = {
+  tenant: {
+    id: string;
+    fullName: string;
+    document: string;
+    email: string | null;
+  };
+  contracts: Array<{
+    id: string;
+    code: string;
+    startDate: string;
+    endDate: string;
+    rentAmount: number;
+    owner: {
+      fullName: string;
+      email: string | null;
+      phone: string | null;
+    };
+    property: {
+      id: string;
+      code: string;
+      title: string;
+      addressSummary: string;
+      coverImageUrl: string | null;
+    };
+  }>;
+  recentTickets: Array<{
+    id: string;
+    ticketId: string;
+    title: string;
+    status: string;
+    urgencyLevel: number;
+    severityJustification: string | null;
+    createdAt: string;
+    updatedAt: string;
+    propertyCodeSnapshot: string;
+    propertyTitleSnapshot: string;
+  }>;
+};
+
+export type LeaseTerminationRule = {
+  id: string;
+  name: string;
+  penaltyPercentage: number;
+  proportionalByRemainingTime: boolean;
+  allowManualAdjustments: boolean;
+  additionalRulesJson: unknown;
+  standardNotes: string | null;
+  legalSupportText: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type LeaseTerminationSimulation = {
+  id: string;
+  contractId: string;
+  ruleId: string;
+  remainingMonths: number;
+  contractValue: number;
+  penaltyPercentage: number;
+  calculatedPenalty: number;
+  additionalCharges: number;
+  discounts: number;
+  finalAmount: number;
+  summaryJson: {
+    legalWarning: string;
+    calculationMemory: {
+      contractValue: number;
+      totalDays: number;
+      remainingDays: number;
+      remainingMonths: number;
+      penaltyPercentage: number;
+      proportionalByRemainingTime: boolean;
+      proportionalFactor: number;
+      basePenalty: number;
+      calculatedPenalty: number;
+      additionalCharges: Array<{ label: string; amount: number }>;
+      additionalChargesTotal: number;
+      discounts: Array<{ label: string; amount: number }>;
+      discountsTotal: number;
+      finalAmount: number;
+    };
+    ruleSnapshot: {
+      id: string;
+      name: string;
+      standardNotes: string | null;
+      legalSupportText: string | null;
+      allowManualAdjustments: boolean;
+    };
+  };
+  notes: string | null;
+  createdAt: string;
 };
 
 export type AppNotification = {

@@ -70,6 +70,22 @@ export function resolveSuggestedUrgency(type: string) {
   return urgencyByType[type] ?? 1;
 }
 
+export function requiresMaintenanceEvidence(type: string) {
+  return [
+    "STRUCTURAL",
+    "EXTERNAL",
+    "ROOFING",
+    "LEAKAGE",
+    "PAINTING",
+    "DOORS_WINDOWS",
+    "PEST_CONTROL",
+    "LANDSCAPING",
+    "EQUIPMENT",
+    "FIXED_FURNITURE",
+    "OTHER",
+  ].includes(type);
+}
+
 export function formatOpenDuration(openDays: number) {
   if (openDays <= 0) {
     return "Hoje";

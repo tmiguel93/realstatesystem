@@ -1,3 +1,4 @@
+import { LocaleCode, ThemePreference } from "@prisma/client";
 import { z } from "zod";
 
 const passwordSchema = z
@@ -25,3 +26,7 @@ export const refreshSchema = z.object({
   refreshToken: z.string().optional(),
 });
 
+export const userPreferencesSchema = z.object({
+  preferredTheme: z.nativeEnum(ThemePreference),
+  preferredLocale: z.nativeEnum(LocaleCode),
+});

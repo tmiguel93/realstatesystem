@@ -6,9 +6,11 @@ import { appRoutes } from "@imobiliaria/shared";
 import { ArrowRight, Building2, LockKeyhole, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/features/auth/auth-context";
 import { FormInput } from "@/components/form/form-input";
+import { useI18n } from "@/features/preferences/language-provider";
+import { resolveHomeRoute } from "@/lib/navigation";
 
 const loginSchema = z.object({
-  email: z.string().email("Informe um email valido."),
+  email: z.string().email("Informe um e-mail válido."),
   senha: z.string().min(1, "Informe sua senha."),
 });
 
@@ -18,6 +20,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
+  const { t } = useI18n();
   const {
     register,
     handleSubmit,
@@ -30,12 +33,13 @@ export function LoginPage() {
     },
   });
 
-  const from =
-    (location.state as { from?: string } | null)?.from ?? appRoutes.dashboard;
+  const from = (location.state as { from?: string } | null)?.from;
 
   const onSubmit = handleSubmit(async (values) => {
-    await login(values);
-    navigate(from, { replace: true });
+    const authenticatedUser = await login(values);
+    navigate(from ?? resolveHomeRoute(authenticatedUser.permissions), {
+      replace: true,
+    });
   });
 
   return (
@@ -46,34 +50,33 @@ export function LoginPage() {
           <div className="relative">
             <p className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/8 px-4 py-2 text-xs uppercase tracking-[0.28em] text-white/70">
               <Building2 size={14} />
-              SaaS Imobiliario
+              {t("auth.heroTag")}
             </p>
 
             <h1 className="mt-8 max-w-xl font-display text-4xl leading-tight md:text-6xl">
-              Administracao imobiliaria com postura comercial e operacao madura.
+              {t("auth.heroTitle")}
             </h1>
 
             <p className="mt-5 max-w-2xl text-base text-white/72 md:text-lg">
-              Centralize contratos, chaves, visitas, pipelines e acesso de
-              usuarios em uma plataforma desenhada para produtividade real.
+              {t("auth.heroDescription")}
             </p>
 
             <div className="mt-10 grid gap-4 md:grid-cols-3">
               {[
                 {
                   icon: <ShieldCheck size={18} />,
-                  title: "RBAC real",
-                  text: "Permissoes granulares e rotas protegidas ponta a ponta.",
+                  title: t("auth.featureRbacTitle"),
+                  text: t("auth.featureRbacText"),
                 },
                 {
                   icon: <LockKeyhole size={18} />,
-                  title: "Sessao segura",
-                  text: "JWT curto, refresh token e trilha basica de auditoria.",
+                  title: t("auth.featureSessionTitle"),
+                  text: t("auth.featureSessionText"),
                 },
                 {
                   icon: <ArrowRight size={18} />,
-                  title: "Base escalavel",
-                  text: "Arquitetura pronta para contratos, visitas e operacao multiusuario.",
+                  title: t("auth.featureScaleTitle"),
+                  text: t("auth.featureScaleText"),
                 },
               ].map((item) => (
                 <div
@@ -94,18 +97,18 @@ export function LoginPage() {
         <section className="flex items-center justify-center rounded-[30px] bg-[#f5f4f0] p-4 md:p-8">
           <div className="w-full max-w-md rounded-[30px] border border-ink-200/70 bg-white p-6 shadow-soft md:p-8">
             <p className="text-xs uppercase tracking-[0.32em] text-brand-600">
-              Acesso seguro
+              {t("auth.secureAccessEyebrow")}
             </p>
             <h2 className="mt-3 font-display text-3xl text-ink-950">
-              Entrar na plataforma
+              {t("auth.loginTitle")}
             </h2>
             <p className="mt-2 text-sm text-ink-500">
-              Use suas credenciais para acessar o ambiente administrativo.
+              {t("auth.loginDescription")}
             </p>
 
             <form className="mt-8 space-y-5" onSubmit={onSubmit}>
               <FormInput
-                label="Email"
+                label={t("auth.emailLabel")}
                 type="email"
                 placeholder="voce@empresa.com.br"
                 error={errors.email?.message}
@@ -113,9 +116,9 @@ export function LoginPage() {
               />
 
               <FormInput
-                label="Senha"
+                label={t("auth.passwordLabel")}
                 type="password"
-                placeholder="Sua senha"
+                placeholder={t("auth.passwordLabel")}
                 error={errors.senha?.message}
                 {...register("senha")}
               />
@@ -126,14 +129,14 @@ export function LoginPage() {
                     type="checkbox"
                     className="rounded border-ink-300 text-brand-600"
                   />
-                  Manter sessao
+                  {t("auth.keepSession")}
                 </label>
 
                 <Link
                   to={appRoutes.forgotPassword}
                   className="font-semibold text-brand-700 transition hover:text-brand-900"
                 >
-                  Esqueci minha senha
+                  {t("auth.forgotPassword")}
                 </Link>
               </div>
 
@@ -142,13 +145,12 @@ export function LoginPage() {
                 disabled={isSubmitting}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-ink-950 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {isSubmitting ? "Entrando..." : "Entrar no sistema"}
+                {isSubmitting ? t("auth.signingIn") : t("auth.submit")}
               </button>
             </form>
 
             <div className="mt-8 rounded-[24px] bg-sand-50 p-4 text-sm text-ink-600">
-              Ambiente protegido com autenticacao segura, controle de acesso e
-              experiencia administrativa desenhada para operacao profissional.
+              {t("auth.securityNote")}
             </div>
           </div>
         </section>
