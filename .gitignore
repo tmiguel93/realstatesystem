@@ -6,6 +6,8 @@ dist
 .DS_Store
 coverage
 *.log
+.runtime-init.sql
+.pglite-imobiliaria/
 .env
 .env.local
 .env.*.local
@@ -15,4 +17,3 @@ pnpm-lock.yaml
 yarn.lock
 .idea
 .vscode
-
