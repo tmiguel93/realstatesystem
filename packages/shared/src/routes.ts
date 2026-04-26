@@ -27,6 +27,7 @@ export const appRoutes = {
   tenantDetail: "/locatarios/:tenantId",
   properties: "/imoveis",
   propertyDetail: "/imoveis/:propertyId",
+  property360: "/imoveis/:propertyId/360",
   users: "/usuarios",
   accessManagement: "/usuarios/perfis-e-permissoes",
   settings: "/configuracoes",

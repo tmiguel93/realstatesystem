@@ -295,6 +295,14 @@ const router = createBrowserRouter([
             ),
           },
           {
+            path: appRoutes.property360,
+            element: (
+              <PermissionGuard permissions={[permissionCodes.PROPERTIES_READ]}>
+                <PropertyDetailPage />
+              </PermissionGuard>
+            ),
+          },
+          {
             path: appRoutes.users,
             element: (
               <PermissionGuard permissions={[permissionCodes.USERS_MANAGE]}>

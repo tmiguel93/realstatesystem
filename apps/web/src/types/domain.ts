@@ -211,13 +211,49 @@ export type PropertyDetail = {
     keyCount: number;
     saleLeadCount: number;
     rentLeadCount: number;
+    maintenanceTicketCount: number;
   };
+  activeTenant: {
+    id: string;
+    fullName: string;
+    document: string;
+    phone: string | null;
+    email: string | null;
+  } | null;
+  activeContract: {
+    id: string;
+    code: string;
+    status: string;
+    startDate: string;
+    endDate: string;
+    rentAmount: number;
+    tenant: {
+      id: string;
+      fullName: string;
+      document: string;
+      phone: string | null;
+      email: string | null;
+    };
+  } | null;
   propertyKeys: Array<{
     id: string;
     identifier: string;
     currentStatus: string;
     currentHolderName: string | null;
     lastCheckoutAt: string | null;
+  }>;
+  keyControls: Array<{
+    id: string;
+    action: string;
+    resultingStatus: string;
+    holderName: string | null;
+    createdAt: string;
+    propertyKey: {
+      identifier: string;
+    };
+    responsibleUser: {
+      fullName: string;
+    } | null;
   }>;
   visits: Array<{
     id: string;
@@ -236,8 +272,28 @@ export type PropertyDetail = {
     endDate: string;
     rentAmount: number;
     tenant: {
+      id: string;
       fullName: string;
+      document: string;
+      phone: string | null;
+      email: string | null;
     };
+  }>;
+  maintenanceTickets: Array<{
+    id: string;
+    ticketId: string;
+    title: string;
+    type: string;
+    urgencyLevel: number;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+    tenant: {
+      fullName: string;
+    } | null;
+    assignedToUser: {
+      fullName: string;
+    } | null;
   }>;
 };
 

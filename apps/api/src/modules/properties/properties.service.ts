@@ -1,4 +1,5 @@
-import { AuditEntityType, Prisma } from "@prisma/client";
+import { AuditEntityType, ContractStatus, Prisma } from "@prisma/client";
+import { permissionCodes } from "@imobiliaria/shared";
 import { prisma } from "../../core/prisma";
 import { HttpError } from "../../core/http-error";
 import { buildPaginationMeta, resolvePagination } from "../../core/pagination";
@@ -20,6 +21,8 @@ type RequestContext = {
   actorUserId?: string;
   ipAddress?: string;
   userAgent?: string;
+  permissions?: string[];
+  roles?: string[];
 };
 
 type PropertyPayload = {
@@ -151,6 +154,10 @@ function mapPropertyBase(property: {
 }
 
 export class PropertiesService {
+  private hasPermission(context: RequestContext, permission: string) {
+    return context.permissions?.includes(permission) ?? false;
+  }
+
   async list(query: PropertiesListQuery) {
     const { page, pageSize, skip, take } = resolvePagination(query);
     const where: Prisma.PropertyWhereInput = {
@@ -211,67 +218,184 @@ export class PropertiesService {
     };
   }
 
-  async getById(id: string) {
-    const property = await prisma.property.findUnique({
-      where: { id },
-      include: {
-        owner: true,
-        _count: {
-          select: {
-            contracts: true,
-            visits: true,
-            propertyKeys: true,
-            saleLeads: true,
-            rentLeads: true,
+  async getById(id: string, context: RequestContext = {}) {
+    const canReadImages =
+      this.hasPermission(context, permissionCodes.PROPERTY_IMAGES_READ) ||
+      this.hasPermission(context, permissionCodes.PROPERTY_IMAGES_WRITE);
+    const canReadKeys = this.hasPermission(context, permissionCodes.KEYS_READ);
+    const canReadVisits = this.hasPermission(
+      context,
+      permissionCodes.VISITS_READ,
+    );
+    const canReadContracts = this.hasPermission(
+      context,
+      permissionCodes.CONTRACTS_READ,
+    );
+    const canReadMaintenance = this.hasPermission(
+      context,
+      permissionCodes.MAINTENANCE_READ,
+    );
+    const canReadTenants =
+      this.hasPermission(context, permissionCodes.TENANTS_READ) ||
+      canReadContracts;
+    const activeContractStatuses = [
+      ContractStatus.ACTIVE,
+      ContractStatus.RENEWED,
+    ];
+
+    const [property, activeContract] = await Promise.all([
+      prisma.property.findUnique({
+        where: { id },
+        include: {
+          owner: {
+            select: {
+              id: true,
+              personType: true,
+              fullName: true,
+              document: true,
+              email: true,
+              phone: true,
+              secondaryPhone: true,
+              city: true,
+              state: true,
+              isActive: true,
+            },
           },
-        },
-        propertyKeys: {
-          orderBy: { createdAt: "desc" },
-          select: {
-            id: true,
-            identifier: true,
-            currentStatus: true,
-            currentHolderName: true,
-            lastCheckoutAt: true,
+          _count: {
+            select: {
+              contracts: true,
+              visits: true,
+              propertyKeys: true,
+              saleLeads: true,
+              rentLeads: true,
+              maintenanceTickets: true,
+            },
           },
-        },
-        visits: {
-          orderBy: { scheduledAt: "desc" },
-          take: 8,
-          select: {
-            id: true,
-            scheduledAt: true,
-            status: true,
-            outcome: true,
-            broker: {
-              select: {
-                fullName: true,
+          propertyKeys: {
+            orderBy: { createdAt: "desc" },
+            select: {
+              id: true,
+              identifier: true,
+              currentStatus: true,
+              currentHolderName: true,
+              lastCheckoutAt: true,
+            },
+          },
+          keyControls: {
+            orderBy: { createdAt: "desc" },
+            take: 8,
+            select: {
+              id: true,
+              action: true,
+              resultingStatus: true,
+              holderName: true,
+              createdAt: true,
+              propertyKey: {
+                select: {
+                  identifier: true,
+                },
+              },
+              responsibleUser: {
+                select: {
+                  fullName: true,
+                },
               },
             },
           },
-        },
-        contracts: {
-          orderBy: { createdAt: "desc" },
-          take: 8,
-          select: {
-            id: true,
-            code: true,
-            status: true,
-            startDate: true,
-            endDate: true,
-            rentAmount: true,
-            tenant: {
-              select: {
-                fullName: true,
+          visits: {
+            orderBy: { scheduledAt: "desc" },
+            take: 8,
+            select: {
+              id: true,
+              scheduledAt: true,
+              status: true,
+              outcome: true,
+              broker: {
+                select: {
+                  fullName: true,
+                },
               },
             },
           },
+          contracts: {
+            orderBy: { createdAt: "desc" },
+            take: 8,
+            select: {
+              id: true,
+              code: true,
+              status: true,
+              startDate: true,
+              endDate: true,
+              rentAmount: true,
+              tenant: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  document: true,
+                  phone: true,
+                  email: true,
+                },
+              },
+            },
+          },
+          maintenanceTickets: {
+            orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+            take: 8,
+            select: {
+              id: true,
+              ticketId: true,
+              title: true,
+              type: true,
+              urgencyLevel: true,
+              status: true,
+              createdAt: true,
+              updatedAt: true,
+              tenant: {
+                select: {
+                  fullName: true,
+                },
+              },
+              assignedToUser: {
+                select: {
+                  fullName: true,
+                },
+              },
+            },
+          },
+          propertyImages: {
+            orderBy: [{ isCover: "desc" }, { orderIndex: "asc" }],
+          },
         },
-        propertyImages: {
-          orderBy: [{ isCover: "desc" }, { orderIndex: "asc" }],
-        },
-      },
-    });
+      }),
+      canReadTenants
+        ? prisma.contract.findFirst({
+            where: {
+              propertyId: id,
+              status: {
+                in: activeContractStatuses,
+              },
+            },
+            orderBy: { startDate: "desc" },
+            select: {
+              id: true,
+              code: true,
+              status: true,
+              startDate: true,
+              endDate: true,
+              rentAmount: true,
+              tenant: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  document: true,
+                  phone: true,
+                  email: true,
+                },
+              },
+            },
+          })
+        : Promise.resolve(null),
+    ]);
 
     if (!property) {
       throw new HttpError(404, "Imovel nao encontrado.");
@@ -285,16 +409,31 @@ export class PropertiesService {
       iptu: toNumber(property.iptu),
       areaTotal: toNumber(property.areaTotal),
       areaBuilt: toNumber(property.areaBuilt),
-      contracts: property.contracts.map((contract) => ({
-        ...contract,
-        rentAmount: Number(contract.rentAmount),
-      })),
+      propertyImages: canReadImages ? property.propertyImages : [],
+      propertyKeys: canReadKeys ? property.propertyKeys : [],
+      keyControls: canReadKeys ? property.keyControls : [],
+      visits: canReadVisits ? property.visits : [],
+      contracts: canReadContracts
+        ? property.contracts.map((contract) => ({
+            ...contract,
+            rentAmount: Number(contract.rentAmount),
+          }))
+        : [],
+      maintenanceTickets: canReadMaintenance ? property.maintenanceTickets : [],
+      activeContract: activeContract && canReadContracts
+        ? {
+            ...activeContract,
+            rentAmount: Number(activeContract.rentAmount),
+          }
+        : null,
+      activeTenant: canReadTenants ? activeContract?.tenant ?? null : null,
       metrics: {
         contractCount: property._count.contracts,
         visitCount: property._count.visits,
         keyCount: property._count.propertyKeys,
         saleLeadCount: property._count.saleLeads,
         rentLeadCount: property._count.rentLeads,
+        maintenanceTicketCount: property._count.maintenanceTickets,
       },
     };
   }

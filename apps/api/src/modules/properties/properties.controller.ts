@@ -23,7 +23,10 @@ export class PropertiesController {
 
   async getById(request: Request, response: Response) {
     const params = propertyIdParamSchema.parse(request.params);
-    const result = await propertiesService.getById(params.id);
+    const result = await propertiesService.getById(
+      params.id,
+      getRequestContext(request),
+    );
     return response.status(200).json(result);
   }
 
