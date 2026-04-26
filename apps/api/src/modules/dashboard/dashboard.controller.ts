@@ -9,5 +9,10 @@ export class DashboardController {
 
     return response.status(200).json(summary);
   }
-}
 
+  async dailyRoutine(_request: Request, response: Response) {
+    const dailyRoutine = await dashboardService.getDailyRoutine();
+
+    return response.status(200).json(dailyRoutine);
+  }
+}

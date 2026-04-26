@@ -16,3 +16,9 @@ dashboardRouter.get(
   asyncHandler(controller.summary.bind(controller)),
 );
 
+dashboardRouter.get(
+  "/daily-routine",
+  requireAuth,
+  requirePermissions([permissionCodes.DASHBOARD_READ]),
+  asyncHandler(controller.dailyRoutine.bind(controller)),
+);

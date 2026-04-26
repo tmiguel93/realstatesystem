@@ -10,6 +10,7 @@ import {
 import { SkeletonCard } from "@/components/feedback/skeleton-card";
 import { StatCard } from "@/components/feedback/stat-card";
 import { useAuth } from "@/features/auth/auth-context";
+import { DailyRoutinePanel } from "@/features/dashboard/daily-routine-panel";
 import { useI18n } from "@/features/preferences/language-provider";
 import { dashboardService } from "@/services/dashboard-service";
 
@@ -23,42 +24,48 @@ export function DashboardPage() {
     enabled: Boolean(accessToken),
   });
 
+  const dailyRoutineQuery = useQuery({
+    queryKey: ["dashboard-daily-routine"],
+    queryFn: () => dashboardService.dailyRoutine(accessToken!),
+    enabled: Boolean(accessToken),
+  });
+
   const statItems = summaryQuery.data
     ? [
         {
           label: t("dashboard.stats.availableProperties"),
           value: summaryQuery.data.availableProperties,
-          detail: "Ativos liberados para venda ou locação no momento.",
+          detail: t("dashboard.statsDetails.availableProperties"),
           icon: <Building2 size={20} />,
         },
         {
           label: t("dashboard.stats.visitsToday"),
           value: summaryQuery.data.visitsToday,
-          detail: "Compromissos confirmados para a agenda atual.",
+          detail: t("dashboard.statsDetails.visitsToday"),
           icon: <CalendarClock size={20} />,
         },
         {
           label: t("dashboard.stats.activeContracts"),
           value: summaryQuery.data.activeContracts,
-          detail: "Locações em vigência acompanhadas pela operação.",
+          detail: t("dashboard.statsDetails.activeContracts"),
           icon: <FileText size={20} />,
         },
         {
           label: t("dashboard.stats.checkedOutKeys"),
           value: summaryQuery.data.checkedOutKeys,
-          detail: "Itens em circulação que pedem controle de devolução.",
+          detail: t("dashboard.statsDetails.checkedOutKeys"),
           icon: <KeyRound size={20} />,
         },
         {
           label: t("dashboard.stats.openSaleLeads"),
           value: summaryQuery.data.openSaleLeads,
-          detail: "Leads comerciais ainda ativos no pipeline de vendas.",
+          detail: t("dashboard.statsDetails.openSaleLeads"),
           icon: <Landmark size={20} />,
         },
         {
           label: t("dashboard.stats.openRentLeads"),
           value: summaryQuery.data.openRentLeads,
-          detail: "Leads de locação em andamento e sob acompanhamento.",
+          detail: t("dashboard.statsDetails.openRentLeads"),
           icon: <UserRoundCheck size={20} />,
         },
       ]
@@ -66,6 +73,12 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <DailyRoutinePanel
+        routine={dailyRoutineQuery.data}
+        isLoading={dailyRoutineQuery.isLoading}
+        isError={dailyRoutineQuery.isError}
+      />
+
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {summaryQuery.isLoading
           ? Array.from({ length: 6 }).map((_, index) => (

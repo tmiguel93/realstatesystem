@@ -106,6 +106,67 @@ export const messages = {
         openSaleLeads: "Oportunidades em vendas",
         openRentLeads: "Oportunidades em locação",
       },
+      statsDetails: {
+        availableProperties:
+          "Ativos liberados para venda ou loca\u00e7\u00e3o no momento.",
+        visitsToday: "Compromissos confirmados para a agenda atual.",
+        activeContracts:
+          "Loca\u00e7\u00f5es em vig\u00eancia acompanhadas pela opera\u00e7\u00e3o.",
+        checkedOutKeys:
+          "Itens em circula\u00e7\u00e3o que pedem controle de devolu\u00e7\u00e3o.",
+        openSaleLeads: "Leads comerciais ainda ativos no pipeline de vendas.",
+        openRentLeads:
+          "Leads de loca\u00e7\u00e3o em andamento e sob acompanhamento.",
+      },
+      dailyRoutine: {
+        eyebrow: "Rotina operacional",
+        title: "Rotina do Dia",
+        description:
+          "Priorize visitas, chaves, contratos, chamados e leads que precisam de a\u00e7\u00e3o hoje.",
+        refreshedAt: "Atualizado \u00e0s {time}",
+        unavailable:
+          "N\u00e3o foi poss\u00edvel carregar a rotina agora. Tente atualizar o dashboard em alguns instantes.",
+        noPermissionAction: "Sem acesso a esta tela",
+        alerts: {
+          OVERDUE: "Atrasado",
+          DUE_TODAY: "Vence hoje",
+          URGENT: "Urgente",
+          UNASSIGNED: "Sem respons\u00e1vel",
+          noAlert: "Sem alerta",
+        },
+        items: {
+          visits: {
+            title: "Visitas de hoje",
+            description:
+              "{overdue} visita(s) j\u00e1 deveriam ter acontecido e pedem confer\u00eancia.",
+            action: "Abrir agenda",
+          },
+          keys: {
+            title: "Chaves fora",
+            description:
+              "{overdue} atrasada(s) e {unassigned} sem respons\u00e1vel informado.",
+            action: "Ver chaves",
+          },
+          contracts: {
+            title: "Contratos vencendo",
+            description:
+              "{dueToday} vence(m) hoje, {overdue} est\u00e3o atrasado(s) e a janela \u00e9 de {days} dias.",
+            action: "Ver contratos",
+          },
+          maintenance: {
+            title: "Chamados cr\u00edticos",
+            description:
+              "{urgent} urgente(s), {overdue} vencido(s) no SLA e {unassigned} sem respons\u00e1vel.",
+            action: "Abrir chamados",
+          },
+          leads: {
+            title: "Leads sem retorno",
+            description:
+              "{overdue} atrasado(s), {dueToday} para hoje, {sales} de venda e {rents} de loca\u00e7\u00e3o.",
+            action: "Revisar leads",
+          },
+        },
+      },
     },
     settings: {
       eyebrow: "Preferências",
@@ -390,6 +451,63 @@ export const messages = {
         openSaleLeads: "Open sales opportunities",
         openRentLeads: "Open rental opportunities",
       },
+      statsDetails: {
+        availableProperties: "Assets currently released for sale or rent.",
+        visitsToday: "Confirmed appointments for the current agenda.",
+        activeContracts: "Active rentals tracked by the operation.",
+        checkedOutKeys: "Items in circulation that require return control.",
+        openSaleLeads: "Commercial leads still active in the sales pipeline.",
+        openRentLeads: "Rental leads in progress and under follow-up.",
+      },
+      dailyRoutine: {
+        eyebrow: "Operational routine",
+        title: "Daily Routine",
+        description:
+          "Prioritize visits, keys, contracts, tickets and leads that need action today.",
+        refreshedAt: "Updated at {time}",
+        unavailable:
+          "Unable to load the routine right now. Try refreshing the dashboard in a moment.",
+        noPermissionAction: "No access to this screen",
+        alerts: {
+          OVERDUE: "Overdue",
+          DUE_TODAY: "Due today",
+          URGENT: "Urgent",
+          UNASSIGNED: "Unassigned",
+          noAlert: "No alert",
+        },
+        items: {
+          visits: {
+            title: "Today's visits",
+            description:
+              "{overdue} visit(s) should already have happened and need checking.",
+            action: "Open agenda",
+          },
+          keys: {
+            title: "Checked-out keys",
+            description:
+              "{overdue} overdue and {unassigned} without an informed holder.",
+            action: "View keys",
+          },
+          contracts: {
+            title: "Expiring contracts",
+            description:
+              "{dueToday} due today, {overdue} overdue and the window is {days} days.",
+            action: "View contracts",
+          },
+          maintenance: {
+            title: "Critical tickets",
+            description:
+              "{urgent} urgent, {overdue} over SLA and {unassigned} unassigned.",
+            action: "Open tickets",
+          },
+          leads: {
+            title: "Leads without return",
+            description:
+              "{overdue} overdue, {dueToday} due today, {sales} sales and {rents} rental.",
+            action: "Review leads",
+          },
+        },
+      },
     },
     settings: {
       eyebrow: "Preferences",
@@ -671,6 +789,67 @@ export const messages = {
         checkedOutKeys: "Llaves en posesión",
         openSaleLeads: "Oportunidades de venta",
         openRentLeads: "Oportunidades de alquiler",
+      },
+      statsDetails: {
+        availableProperties:
+          "Activos liberados para venta o alquiler en este momento.",
+        visitsToday: "Compromisos confirmados para la agenda actual.",
+        activeContracts:
+          "Alquileres vigentes acompa\u00f1ados por la operaci\u00f3n.",
+        checkedOutKeys:
+          "Elementos en circulaci\u00f3n que requieren control de devoluci\u00f3n.",
+        openSaleLeads: "Leads comerciales activos en el embudo de ventas.",
+        openRentLeads:
+          "Leads de alquiler en curso y bajo seguimiento.",
+      },
+      dailyRoutine: {
+        eyebrow: "Rutina operativa",
+        title: "Rutina del d\u00eda",
+        description:
+          "Prioriza visitas, llaves, contratos, tickets y leads que necesitan acci\u00f3n hoy.",
+        refreshedAt: "Actualizado a las {time}",
+        unavailable:
+          "No fue posible cargar la rutina ahora. Intenta actualizar el panel en unos instantes.",
+        noPermissionAction: "Sin acceso a esta pantalla",
+        alerts: {
+          OVERDUE: "Atrasado",
+          DUE_TODAY: "Vence hoy",
+          URGENT: "Urgente",
+          UNASSIGNED: "Sin responsable",
+          noAlert: "Sin alerta",
+        },
+        items: {
+          visits: {
+            title: "Visitas de hoy",
+            description:
+              "{overdue} visita(s) ya deber\u00edan haber ocurrido y requieren revisi\u00f3n.",
+            action: "Abrir agenda",
+          },
+          keys: {
+            title: "Llaves fuera",
+            description:
+              "{overdue} atrasada(s) y {unassigned} sin responsable informado.",
+            action: "Ver llaves",
+          },
+          contracts: {
+            title: "Contratos por vencer",
+            description:
+              "{dueToday} vence(n) hoy, {overdue} est\u00e1n atrasado(s) y la ventana es de {days} d\u00edas.",
+            action: "Ver contratos",
+          },
+          maintenance: {
+            title: "Tickets cr\u00edticos",
+            description:
+              "{urgent} urgente(s), {overdue} vencido(s) en SLA y {unassigned} sin responsable.",
+            action: "Abrir tickets",
+          },
+          leads: {
+            title: "Leads sin retorno",
+            description:
+              "{overdue} atrasado(s), {dueToday} para hoy, {sales} de venta y {rents} de alquiler.",
+            action: "Revisar leads",
+          },
+        },
       },
     },
     settings: {
