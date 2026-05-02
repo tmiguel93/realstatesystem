@@ -7,6 +7,7 @@ import pinoHttp from "pino-http";
 import { env } from "./config/env";
 import { logger } from "./core/logger";
 import { authRouter } from "./modules/auth/auth.routes";
+import { contactsRouter } from "./modules/contacts/contacts.routes";
 import { contractsRouter } from "./modules/contracts/contracts.routes";
 import { dashboardRouter } from "./modules/dashboard/dashboard.routes";
 import { keysRouter } from "./modules/keys/keys.routes";
@@ -52,6 +53,7 @@ export function createApp() {
   app.use("/api/system", systemRouter);
   app.use("/api/auth", authRouter);
   app.use("/api/dashboard", dashboardRouter);
+  app.use("/api/contacts", contactsRouter);
   app.use("/api/owners", ownersRouter);
   app.use("/api/tenants", tenantsRouter);
   app.use("/api/properties", propertiesRouter);

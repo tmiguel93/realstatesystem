@@ -16,6 +16,8 @@ export const permissionCodes = {
   ACCESS_MANAGE: "access.manage",
   SETTINGS_MANAGE: "settings.manage",
   PREFERENCES_MANAGE: "preferences.manage",
+  CONTACTS_READ: "contacts.read",
+  CONTACTS_WRITE: "contacts.write",
   OWNERS_READ: "owners.read",
   OWNERS_WRITE: "owners.write",
   TENANTS_READ: "tenants.read",
@@ -56,6 +58,8 @@ export const allPermissions = Object.values(permissionCodes);
 export const operationalPermissions: PermissionCode[] = [
   permissionCodes.DASHBOARD_READ,
   permissionCodes.PREFERENCES_MANAGE,
+  permissionCodes.CONTACTS_READ,
+  permissionCodes.CONTACTS_WRITE,
   permissionCodes.OWNERS_READ,
   permissionCodes.OWNERS_WRITE,
   permissionCodes.TENANTS_READ,
@@ -79,6 +83,7 @@ export const operationalPermissions: PermissionCode[] = [
 
 export const brokerPermissions: PermissionCode[] = [
   permissionCodes.PREFERENCES_MANAGE,
+  permissionCodes.CONTACTS_READ,
   permissionCodes.PROPERTIES_READ,
   permissionCodes.PROPERTY_IMAGES_READ,
   permissionCodes.OWNERS_READ,
@@ -92,6 +97,8 @@ export const brokerPermissions: PermissionCode[] = [
 
 export const rentAttendantPermissions: PermissionCode[] = [
   permissionCodes.PREFERENCES_MANAGE,
+  permissionCodes.CONTACTS_READ,
+  permissionCodes.CONTACTS_WRITE,
   permissionCodes.OWNERS_READ,
   permissionCodes.OWNERS_WRITE,
   permissionCodes.TENANTS_READ,
@@ -114,6 +121,7 @@ export const rentAttendantPermissions: PermissionCode[] = [
 
 export const maintenanceTeamPermissions: PermissionCode[] = [
   permissionCodes.PREFERENCES_MANAGE,
+  permissionCodes.CONTACTS_READ,
   permissionCodes.OWNERS_READ,
   permissionCodes.TENANTS_READ,
   permissionCodes.PROPERTIES_READ,

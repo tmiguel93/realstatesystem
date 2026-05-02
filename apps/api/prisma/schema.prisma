@@ -29,6 +29,14 @@ enum PersonType {
   COMPANY
 }
 
+enum ContactRoleType {
+  OWNER
+  TENANT
+  BUYER
+  GUARANTOR
+  EXTERNAL_BROKER
+}
+
 enum PropertyType {
   APARTMENT
   HOUSE
@@ -267,6 +275,7 @@ enum AuditEntityType {
   ROLE
   PERMISSION
   TENANT_PORTAL_ACCESS
+  CONTACT
   OWNER
   TENANT
   PROPERTY
@@ -429,8 +438,46 @@ model PasswordResetToken {
   @@index([userId, expiresAt])
 }
 
+model Contact {
+  id             String            @id @default(uuid()) @db.Uuid
+  personType     PersonType
+  fullName       String            @db.VarChar(150)
+  document       String?           @unique @db.VarChar(20)
+  email          String?           @unique @db.VarChar(150)
+  phone          String?           @unique @db.VarChar(30)
+  secondaryPhone String?           @db.VarChar(30)
+  zipCode        String?           @db.VarChar(12)
+  state          String?           @db.VarChar(2)
+  city           String?           @db.VarChar(100)
+  district       String?           @db.VarChar(100)
+  street         String?           @db.VarChar(150)
+  streetNumber   String?           @db.VarChar(20)
+  complement     String?           @db.VarChar(120)
+  notes          String?           @db.Text
+  isActive       Boolean           @default(true)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  roles          ContactRole[]
+  ownerProfile   Owner?
+  tenantProfile  Tenant?
+
+  @@index([fullName])
+  @@index([isActive])
+}
+
+model ContactRole {
+  contactId  String          @db.Uuid
+  role       ContactRoleType
+  assignedAt DateTime        @default(now())
+  contact    Contact         @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@id([contactId, role])
+  @@index([role])
+}
+
 model Owner {
   id                 String      @id @default(uuid()) @db.Uuid
+  contactId          String?     @unique @db.Uuid
   personType         PersonType
   fullName           String      @db.VarChar(150)
   document           String      @unique @db.VarChar(20)
@@ -452,16 +499,19 @@ model Owner {
   isActive           Boolean     @default(true)
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
+  contact            Contact?    @relation(fields: [contactId], references: [id], onDelete: Restrict)
   properties         Property[]
   contracts          Contract[]  @relation("ContractOwner")
   documents          Document[]  @relation("DocumentOwner")
 
+  @@index([contactId])
   @@index([fullName])
   @@index([isActive])
 }
 
 model Tenant {
   id                 String       @id @default(uuid()) @db.Uuid
+  contactId          String?      @unique @db.Uuid
   fullName           String       @db.VarChar(150)
   document           String       @unique @db.VarChar(20)
   email              String?      @db.VarChar(150)
@@ -480,12 +530,14 @@ model Tenant {
   isActive           Boolean      @default(true)
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
+  contact            Contact?     @relation(fields: [contactId], references: [id], onDelete: Restrict)
   rentLeads          RentLead[]
   contracts          Contract[]   @relation("ContractTenant")
   maintenanceTickets MaintenanceTicket[]
   portalAccesses     TenantPortalAccess[]
   documents          Document[]   @relation("DocumentTenant")
 
+  @@index([contactId])
   @@index([fullName])
   @@index([scoreStatus])
   @@index([isActive])

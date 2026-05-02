@@ -17,6 +17,10 @@ export function resolveHomeRoute(permissions: string[]) {
     return appRoutes.contracts;
   }
 
+  if (permissions.includes(permissionCodes.CONTACTS_READ)) {
+    return appRoutes.contacts;
+  }
+
   if (permissions.includes(permissionCodes.PROPERTIES_READ)) {
     return appRoutes.properties;
   }

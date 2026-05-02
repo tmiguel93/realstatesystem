@@ -6,6 +6,7 @@ import { PermissionGuard } from "@/routes/permission-guard";
 import { useAuth } from "@/features/auth/auth-context";
 import { resolveHomeRoute } from "@/lib/navigation";
 import { AccessManagementPage } from "@/pages/access-management-page";
+import { ContactsPage } from "@/pages/contacts-page";
 import { ContractDetailPage } from "@/pages/contract-detail-page";
 import { ContractGeneratorPage } from "@/pages/contract-generator-page";
 import { ContractTerminationConfirmPage } from "@/pages/contract-termination-confirm-page";
@@ -243,6 +244,14 @@ const router = createBrowserRouter([
                 permissions={[permissionCodes.LEASE_TERMINATION_EXECUTE]}
               >
                 <ContractTerminationConfirmPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: appRoutes.contacts,
+            element: (
+              <PermissionGuard permissions={[permissionCodes.CONTACTS_READ]}>
+                <ContactsPage />
               </PermissionGuard>
             ),
           },

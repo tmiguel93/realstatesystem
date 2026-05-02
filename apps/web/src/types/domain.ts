@@ -1,5 +1,54 @@
 import type { PaginatedResponse } from "@imobiliaria/shared";
 
+export type ContactRole =
+  | "OWNER"
+  | "TENANT"
+  | "BUYER"
+  | "GUARANTOR"
+  | "EXTERNAL_BROKER";
+
+export type ContactListItem = {
+  id: string;
+  contactId: string | null;
+  sourceType: "CONTACT" | "LEGACY";
+  personType: string;
+  fullName: string;
+  document: string | null;
+  email: string | null;
+  phone: string | null;
+  secondaryPhone: string | null;
+  city: string | null;
+  state: string | null;
+  roles: ContactRole[];
+  isActive: boolean;
+  createdAt: string;
+  ownerId: string | null;
+  tenantId: string | null;
+  buyerLeadCount: number;
+  propertyCount: number;
+  contractCount: number;
+  rentLeadCount: number;
+  notes: string | null;
+  zipCode: string | null;
+  district: string | null;
+  street: string | null;
+  streetNumber: string | null;
+  complement: string | null;
+};
+
+export type ContactsSummary = {
+  total: number;
+  owners: number;
+  tenants: number;
+  buyers: number;
+  guarantors: number;
+  externalBrokers: number;
+};
+
+export type PaginatedContacts = PaginatedResponse<ContactListItem> & {
+  summary: ContactsSummary;
+};
+
 export type OwnerListItem = {
   id: string;
   personType: string;

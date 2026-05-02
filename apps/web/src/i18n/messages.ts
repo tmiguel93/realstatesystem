@@ -33,6 +33,7 @@ export const messages = {
       },
       menu: {
         dashboard: "Dashboard",
+        contacts: "Contatos",
         properties: "Imóveis",
         owners: "Proprietários",
         tenants: "Locatários",
@@ -379,6 +380,7 @@ export const messages = {
       },
       menu: {
         dashboard: "Dashboard",
+        contacts: "Contacts",
         properties: "Properties",
         owners: "Owners",
         tenants: "Tenants",
@@ -717,6 +719,7 @@ export const messages = {
       },
       menu: {
         dashboard: "Panel",
+        contacts: "Contactos",
         properties: "Inmuebles",
         owners: "Propietarios",
         tenants: "Inquilinos",

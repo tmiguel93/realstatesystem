@@ -30,6 +30,13 @@ const items = [
   },
   {
     section: "layout.sections.registry",
+    label: "layout.menu.contacts",
+    to: appRoutes.contacts,
+    icon: Users,
+    permission: permissionCodes.CONTACTS_READ,
+  },
+  {
+    section: "layout.sections.registry",
     label: "layout.menu.properties",
     to: appRoutes.properties,
     icon: Home,

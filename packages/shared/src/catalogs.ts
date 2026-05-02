@@ -3,6 +3,14 @@ export const personTypeOptions = [
   { value: "COMPANY", label: "Pessoa jurídica" },
 ] as const;
 
+export const contactRoleOptions = [
+  { value: "OWNER", label: "Proprietário" },
+  { value: "TENANT", label: "Locatário" },
+  { value: "BUYER", label: "Comprador" },
+  { value: "GUARANTOR", label: "Fiador" },
+  { value: "EXTERNAL_BROKER", label: "Corretor externo" },
+] as const;
+
 export const scoreStatusOptions = [
   { value: "NOT_ANALYZED", label: "Não analisado" },
   { value: "APPROVED", label: "Aprovado" },
@@ -278,6 +286,8 @@ export const permissionLabels = {
   "access.manage": "Gestão de perfis e permissões",
   "settings.manage": "Gestão de configurações",
   "preferences.manage": "Gestão de preferências",
+  "contacts.read": "Leitura de contatos unificados",
+  "contacts.write": "Edição de contatos unificados",
   "owners.read": "Leitura de proprietários",
   "owners.write": "Edição de proprietários",
   "tenants.read": "Leitura de locatários",

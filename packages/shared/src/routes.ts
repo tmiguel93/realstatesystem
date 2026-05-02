@@ -21,6 +21,7 @@ export const appRoutes = {
   contractTerminationRules: "/contratos/rescisao/regras",
   contractTerminationSimulate: "/contratos/:contractId/rescisao",
   contractTerminationConfirm: "/contratos/:contractId/rescisao/confirmacao",
+  contacts: "/contatos",
   owners: "/proprietarios",
   ownerDetail: "/proprietarios/:ownerId",
   tenants: "/locatarios",
