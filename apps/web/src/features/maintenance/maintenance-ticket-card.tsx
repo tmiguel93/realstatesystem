@@ -5,7 +5,12 @@ import { Clock3, MapPin, UserRound, Wrench } from "lucide-react";
 import { StatusBadge } from "@/components/feedback/status-badge";
 import { MaintenanceUrgencyBadge } from "@/features/maintenance/maintenance-urgency-badge";
 import { buildDetailPath, formatDateTime } from "@/lib/format";
-import { formatOpenDuration, getMaintenanceTypeLabel } from "@/lib/maintenance";
+import {
+  formatOpenDuration,
+  getMaintenanceTriageDecisionLabel,
+  getMaintenanceTriageTone,
+  getMaintenanceTypeLabel,
+} from "@/lib/maintenance";
 import { resolveStatusTone } from "@/lib/status";
 import type { MaintenanceTicketListItem } from "@/types/domain";
 
@@ -44,6 +49,11 @@ export function MaintenanceTicketCard({
         <span className="inline-flex items-center gap-2 rounded-full border border-ink-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-ink-500">
           <Wrench size={12} />
           {getMaintenanceTypeLabel(ticket.type)}
+        </span>
+        <span
+          className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${getMaintenanceTriageTone(ticket.triageDecision)}`}
+        >
+          {getMaintenanceTriageDecisionLabel(ticket.triageDecision)}
         </span>
       </div>
 

@@ -1,4 +1,5 @@
 import {
+  MaintenanceTriageDecision,
   MaintenanceTicketStatus,
   MaintenanceTicketType,
 } from "@prisma/client";
@@ -38,6 +39,7 @@ export const maintenanceTicketsListQuerySchema = z.object({
   propertyId: z.string().uuid().optional(),
   status: z.nativeEnum(MaintenanceTicketStatus).optional(),
   type: z.nativeEnum(MaintenanceTicketType).optional(),
+  triageDecision: z.nativeEnum(MaintenanceTriageDecision).optional(),
   urgencyLevel: z.coerce.number().int().min(1).max(5).optional(),
   assignedToUserId: z.string().uuid().optional(),
   openedByUserId: z.string().uuid().optional(),
@@ -61,6 +63,11 @@ export const maintenanceTicketCreateSchema = z.object({
     .min(12, "Descreva o chamado com um pouco mais de contexto."),
   type: z.nativeEnum(MaintenanceTicketType),
   urgencyLevel: z.coerce.number().int().min(1).max(5).optional().nullable(),
+  triageDecision: z
+    .nativeEnum(MaintenanceTriageDecision)
+    .optional()
+    .nullable(),
+  triageNotes: optionalString,
   assignedToUserId: z.string().uuid().optional().nullable(),
   internalNotes: optionalString,
   attachments: z.array(maintenanceTicketAttachmentSchema).default([]),
@@ -81,5 +88,11 @@ export const maintenanceTicketStatusSchema = z.object({
   resolutionSummary: optionalString,
   cancelReason: optionalString,
   internalNotes: optionalString,
+  assignedToUserId: z.string().uuid().optional().nullable(),
+});
+
+export const maintenanceTicketTriageSchema = z.object({
+  triageDecision: z.nativeEnum(MaintenanceTriageDecision),
+  triageNotes: optionalString,
   assignedToUserId: z.string().uuid().optional().nullable(),
 });

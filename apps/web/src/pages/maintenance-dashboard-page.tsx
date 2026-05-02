@@ -59,7 +59,7 @@ export function MaintenanceDashboardPage() {
 
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {dashboardQuery.isLoading
-          ? Array.from({ length: 8 }).map((_, index) => (
+          ? Array.from({ length: 10 }).map((_, index) => (
               <SkeletonCard key={index} />
             ))
           : [
@@ -106,10 +106,22 @@ export function MaintenanceDashboardPage() {
                 detail: "Media em horas entre abertura e resolucao/finalizacao.",
               },
               {
-                label: "Painel operacional",
-                value: dashboard?.criticalTickets.length ?? 0,
+                label: "Em triagem",
+                value: dashboard?.indicators.triageCount ?? 0,
                 icon: <FolderKanban size={20} />,
-                detail: "Tickets criticos que merecem revisao rapida do escritorio.",
+                detail: "Chamados aguardando decisão operacional inicial.",
+              },
+              {
+                label: "Sem responsável",
+                value: dashboard?.indicators.unassignedCount ?? 0,
+                icon: <AlertTriangle size={20} />,
+                detail: "Itens que precisam de dono claro para não ficarem parados.",
+              },
+              {
+                label: "Emergenciais",
+                value: dashboard?.indicators.emergencyCount ?? 0,
+                icon: <Siren size={20} />,
+                detail: "Chamados com triagem emergencial ou urgência máxima.",
               },
             ].map((item) => (
               <SectionCard key={item.label}>

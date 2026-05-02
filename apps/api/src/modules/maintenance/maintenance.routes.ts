@@ -56,3 +56,8 @@ maintenanceRouter.patch(
   requirePermissions([permissionCodes.MAINTENANCE_WRITE]),
   asyncHandler(controller.updateStatus.bind(controller)),
 );
+maintenanceRouter.patch(
+  "/:id/triage",
+  requirePermissions([permissionCodes.MAINTENANCE_WRITE]),
+  asyncHandler(controller.triage.bind(controller)),
+);

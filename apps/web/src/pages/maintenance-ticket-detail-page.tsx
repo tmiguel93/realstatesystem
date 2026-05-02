@@ -23,6 +23,8 @@ import { MaintenanceUrgencyBadge } from "@/features/maintenance/maintenance-urge
 import { buildDetailPath, formatDate, formatDateTime } from "@/lib/format";
 import {
   formatOpenDuration,
+  getMaintenanceTriageDecisionLabel,
+  getMaintenanceTriageTone,
   getMaintenanceTypeLabel,
 } from "@/lib/maintenance";
 import { resolveStatusTone } from "@/lib/status";
@@ -67,6 +69,23 @@ export function MaintenanceTicketDetailPage() {
       maintenanceService.updateStatus(accessToken!, ticketId, payload),
     onSuccess: async () => {
       toast.success("Movimentacao do chamado registrada.");
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["maintenance-ticket-detail", ticketId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ["maintenance-tickets"] }),
+        queryClient.invalidateQueries({ queryKey: ["maintenance-dashboard"] }),
+        queryClient.invalidateQueries({ queryKey: ["maintenance-kanban"] }),
+        queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+      ]);
+    },
+  });
+
+  const triageMutation = useMutation({
+    mutationFn: (payload: Parameters<typeof maintenanceService.triage>[2]) =>
+      maintenanceService.triage(accessToken!, ticketId, payload),
+    onSuccess: async () => {
+      toast.success("Triagem do chamado registrada.");
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: ["maintenance-ticket-detail", ticketId],
@@ -185,6 +204,25 @@ export function MaintenanceTicketDetailPage() {
                 </p>
                 <p className="mt-2 text-sm font-semibold text-ink-900">
                   {formatDateTime(ticket.updatedAt)}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-ink-400">
+                  Triagem operacional
+                </p>
+                <span
+                  className={`mt-2 inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${getMaintenanceTriageTone(ticket.triageDecision)}`}
+                >
+                  {getMaintenanceTriageDecisionLabel(ticket.triageDecision)}
+                </span>
+                <p className="mt-2 whitespace-pre-wrap text-sm text-ink-600">
+                  {ticket.triageNotes ?? "Ainda sem observação de triagem."}
+                </p>
+                <p className="mt-1 text-xs text-ink-400">
+                  {ticket.triagedAt
+                    ? `Registrada em ${formatDateTime(ticket.triagedAt)} por ${ticket.triagedByUser?.fullName ?? "sistema"}`
+                    : "Ainda não triado formalmente."}
                 </p>
               </div>
 
@@ -406,10 +444,15 @@ export function MaintenanceTicketDetailPage() {
           <MaintenanceStatusPanel
             currentStatus={ticket.status}
             currentAssignedToUserId={ticket.assignedToUser?.id}
+            currentTriageDecision={ticket.triageDecision}
             responsibleOptions={responsibleOptions}
             pending={statusMutation.isPending}
+            triagePending={triageMutation.isPending}
             onSubmit={async (payload) => {
               await statusMutation.mutateAsync(payload);
+            }}
+            onTriage={async (payload) => {
+              await triageMutation.mutateAsync(payload);
             }}
           />
 

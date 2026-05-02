@@ -2,6 +2,8 @@ import { useDeferredValue, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   appRoutes,
+  maintenanceSimpleStatusOptions,
+  maintenanceTriageDecisionOptions,
   maintenanceTicketStatusOptions,
   maintenanceTicketTypeOptions,
   maintenanceUrgencyOptions,
@@ -20,8 +22,8 @@ import { maintenanceService } from "@/services/maintenance-service";
 import { propertiesService } from "@/services/properties-service";
 import { usersService } from "@/services/users-service";
 
-const quickStatusOptions = maintenanceTicketStatusOptions.filter(
-  (option) => !["FINISHED", "CANCELLED"].includes(option.value),
+const quickStatusOptions = maintenanceSimpleStatusOptions.filter(
+  (option) => option.value !== "CANCELLED",
 );
 
 export function MaintenanceKanbanPage() {
@@ -31,6 +33,7 @@ export function MaintenanceKanbanPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [triageFilter, setTriageFilter] = useState("");
   const [urgencyFilter, setUrgencyFilter] = useState("");
   const [propertyFilter, setPropertyFilter] = useState("");
   const [assignedFilter, setAssignedFilter] = useState("");
@@ -45,6 +48,7 @@ export function MaintenanceKanbanPage() {
       deferredSearch,
       statusFilter,
       typeFilter,
+      triageFilter,
       urgencyFilter,
       propertyFilter,
       assignedFilter,
@@ -58,6 +62,7 @@ export function MaintenanceKanbanPage() {
         search: deferredSearch || undefined,
         status: statusFilter || undefined,
         type: typeFilter || undefined,
+        triageDecision: triageFilter || undefined,
         urgencyLevel: urgencyFilter || undefined,
         propertyId: propertyFilter || undefined,
         assignedToUserId: assignedFilter || undefined,
@@ -188,6 +193,18 @@ export function MaintenanceKanbanPage() {
           >
             <option value="">Todas as urgencias</option>
             {maintenanceUrgencyOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={triageFilter}
+            onChange={(event) => setTriageFilter(event.target.value)}
+            className="filter-control"
+          >
+            <option value="">Todas as triagens</option>
+            {maintenanceTriageDecisionOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>

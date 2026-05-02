@@ -21,6 +21,8 @@ export type MaintenanceTicketPayload = {
   description: string;
   type: string;
   urgencyLevel?: number | null;
+  triageDecision?: string | null;
+  triageNotes?: string | null;
   assignedToUserId?: string | null;
   internalNotes?: string | null;
   attachments: MaintenanceAttachmentPayload[];
@@ -34,6 +36,12 @@ type MaintenanceTicketStatusPayload = {
   assignedToUserId?: string | null;
 };
 
+type MaintenanceTicketTriagePayload = {
+  triageDecision: string;
+  triageNotes?: string | null;
+  assignedToUserId?: string | null;
+};
+
 type MaintenanceListQuery = {
   accessToken: string;
   page?: number;
@@ -42,6 +50,7 @@ type MaintenanceListQuery = {
   propertyId?: string;
   status?: string;
   type?: string;
+  triageDecision?: string;
   urgencyLevel?: string;
   assignedToUserId?: string;
   openedByUserId?: string;
@@ -148,6 +157,19 @@ export const maintenanceService = {
   ) {
     const { data } = await api.patch(
       `/maintenance-tickets/${id}/status`,
+      payload,
+      authHeader(accessToken),
+    );
+    return data;
+  },
+
+  async triage(
+    accessToken: string,
+    id: string,
+    payload: MaintenanceTicketTriagePayload,
+  ) {
+    const { data } = await api.patch(
+      `/maintenance-tickets/${id}/triage`,
       payload,
       authHeader(accessToken),
     );

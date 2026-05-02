@@ -3,6 +3,7 @@ import {
   ContractStatus,
   DocumentCategory,
   MaintenanceSeveritySourceType,
+  MaintenanceTriageDecision,
   MaintenanceTicketHistoryActionType,
   MaintenanceTicketStatus,
   MaintenanceTicketType,
@@ -21,6 +22,7 @@ import { rethrowPrismaError } from "../../core/prisma-error";
 import {
   getDaysSinceLastUpdate,
   getMaintenanceStatusLabel,
+  getMaintenanceTriageDecisionLabel,
   getMaintenanceTypeLabel,
   getMaintenanceUrgencyLabel,
   getOpenDays,
@@ -49,6 +51,7 @@ type MaintenanceListQuery = {
   propertyId?: string;
   status?: MaintenanceTicketStatus;
   type?: MaintenanceTicketType;
+  triageDecision?: MaintenanceTriageDecision;
   urgencyLevel?: number;
   assignedToUserId?: string;
   openedByUserId?: string;
@@ -71,6 +74,8 @@ type MaintenanceCreatePayload = {
   description: string;
   type: MaintenanceTicketType;
   urgencyLevel?: number | null;
+  triageDecision?: MaintenanceTriageDecision | null;
+  triageNotes?: string | null;
   assignedToUserId?: string | null;
   internalNotes?: string | null;
   attachments: AttachmentInput[];
@@ -84,6 +89,12 @@ type MaintenanceStatusPayload = {
   resolutionSummary?: string | null;
   cancelReason?: string | null;
   internalNotes?: string | null;
+  assignedToUserId?: string | null;
+};
+
+type MaintenanceTriagePayload = {
+  triageDecision: MaintenanceTriageDecision;
+  triageNotes?: string | null;
   assignedToUserId?: string | null;
 };
 
@@ -134,6 +145,7 @@ function resolveStatusBucket(status: MaintenanceTicketStatus) {
   }
 
   if (
+    status === MaintenanceTicketStatus.WAITING_APPROVAL ||
     status === MaintenanceTicketStatus.WAITING_PROVIDER ||
     status === MaintenanceTicketStatus.IN_PROGRESS ||
     status === MaintenanceTicketStatus.WAITING_MATERIAL ||
@@ -145,6 +157,81 @@ function resolveStatusBucket(status: MaintenanceTicketStatus) {
   return "open" as const;
 }
 
+function resolveDefaultTriageDecision(
+  type: MaintenanceTicketType,
+  urgencyLevel: number,
+) {
+  if (
+    urgencyLevel >= 5 ||
+    type === MaintenanceTicketType.EMERGENCY ||
+    type === MaintenanceTicketType.GAS ||
+    type === MaintenanceTicketType.ELECTRICAL
+  ) {
+    return MaintenanceTriageDecision.EMERGENCY;
+  }
+
+  const quoteRequiredTypes = new Set<MaintenanceTicketType>([
+    MaintenanceTicketType.HYDRAULIC,
+    MaintenanceTicketType.STRUCTURAL,
+    MaintenanceTicketType.ROOFING,
+    MaintenanceTicketType.LEAKAGE,
+    MaintenanceTicketType.SEWAGE,
+    MaintenanceTicketType.LOCKS_SECURITY,
+    MaintenanceTicketType.HVAC,
+    MaintenanceTicketType.EQUIPMENT,
+    MaintenanceTicketType.CONDOMINIUM,
+  ]);
+
+  if (quoteRequiredTypes.has(type)) {
+    return MaintenanceTriageDecision.NEEDS_QUOTE;
+  }
+
+  return MaintenanceTriageDecision.INTERNAL_REPAIR;
+}
+
+function resolveStatusForTriageDecision(
+  decision: MaintenanceTriageDecision,
+) {
+  if (decision === MaintenanceTriageDecision.NEEDS_QUOTE) {
+    return MaintenanceTicketStatus.WAITING_PROVIDER;
+  }
+
+  if (decision === MaintenanceTriageDecision.INTERNAL_REPAIR) {
+    return MaintenanceTicketStatus.IN_PROGRESS;
+  }
+
+  return MaintenanceTicketStatus.TRIAGE;
+}
+
+function applyTriageDecisionToSeverity(
+  severity: MaintenanceSeverityResult & { automaticScore: number },
+  decision: MaintenanceTriageDecision,
+) {
+  if (
+    decision === MaintenanceTriageDecision.EMERGENCY &&
+    severity.score < 5
+  ) {
+    return {
+      ...severity,
+      score: 5,
+      justification: `${severity.justification} Triagem emergencial elevou a urgência para nível 5.`,
+    };
+  }
+
+  if (
+    decision === MaintenanceTriageDecision.NEEDS_QUOTE &&
+    severity.score < 3
+  ) {
+    return {
+      ...severity,
+      score: 3,
+      justification: `${severity.justification} Triagem indicou necessidade de orçamento e manteve prioridade mínima alta.`,
+    };
+  }
+
+  return severity;
+}
+
 function mapTicketBase(ticket: {
   id: string;
   ticketId: string;
@@ -154,6 +241,9 @@ function mapTicketBase(ticket: {
   urgencyLevel: number;
   severitySourceType: MaintenanceSeveritySourceType;
   severityJustification: string | null;
+  triageDecision: MaintenanceTriageDecision | null;
+  triageNotes: string | null;
+  triagedAt: Date | null;
   status: MaintenanceTicketStatus;
   propertyId: string;
   tenantId: string | null;
@@ -188,6 +278,10 @@ function mapTicketBase(ticket: {
     urgencyLabel: getMaintenanceUrgencyLabel(ticket.urgencyLevel),
     severitySourceType: ticket.severitySourceType,
     severityJustification: ticket.severityJustification,
+    triageDecision: ticket.triageDecision,
+    triageLabel: getMaintenanceTriageDecisionLabel(ticket.triageDecision),
+    triageNotes: ticket.triageNotes,
+    triagedAt: ticket.triagedAt,
     status: ticket.status,
     statusLabel: getMaintenanceStatusLabel(ticket.status),
     createdAt: ticket.createdAt,
@@ -364,6 +458,13 @@ export class MaintenanceService {
             email: true,
           },
         },
+        triagedByUser: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
         history: {
           orderBy: { createdAt: "desc" },
           include: {
@@ -424,6 +525,11 @@ export class MaintenanceService {
       lastStatusChangeAt: ticket.lastStatusChangeAt,
       severitySourceType: ticket.severitySourceType,
       severityJustification: ticket.severityJustification,
+      triageDecision: ticket.triageDecision,
+      triageLabel: getMaintenanceTriageDecisionLabel(ticket.triageDecision),
+      triageNotes: ticket.triageNotes,
+      triagedAt: ticket.triagedAt,
+      triagedByUser: ticket.triagedByUser,
       property: {
         ...mapTicketBase(ticket).property,
         street: ticket.property.street,
@@ -548,14 +654,22 @@ export class MaintenanceService {
           propertyContext.activeTenant?.id ?? null,
           canOverride,
         );
-        const severity = await this.evaluateSeverity({
+        const evaluatedSeverity = await this.evaluateSeverity({
           type: payload.type,
           description: payload.description,
           attachments: payload.attachments,
           requestedUrgencyLevel: payload.urgencyLevel,
           canOverride,
         });
+        const triageDecision =
+          payload.triageDecision ??
+          resolveDefaultTriageDecision(payload.type, evaluatedSeverity.score);
+        const severity = applyTriageDecisionToSeverity(
+          evaluatedSeverity,
+          triageDecision,
+        );
         const ticketId = await this.generateTicketId(tx);
+        const now = new Date();
 
         const createdTicket = await tx.maintenanceTicket.create({
           data: {
@@ -570,7 +684,12 @@ export class MaintenanceService {
             urgencyLevel: severity.score,
             severitySourceType: severity.sourceType,
             severityJustification: severity.justification,
-            status: MaintenanceTicketStatus.OPEN,
+            triageDecision,
+            triageNotes: normalizeOptionalString(payload.triageNotes),
+            triagedAt: now,
+            triagedByUserId: context.actorUserId,
+            status: MaintenanceTicketStatus.TRIAGE,
+            lastStatusChangeAt: now,
             propertyCodeSnapshot: propertyContext.property.code,
             propertyTitleSnapshot: propertyContext.property.title,
             addressSnapshot: propertyContext.addressSummary,
@@ -609,12 +728,28 @@ export class MaintenanceService {
             maintenanceTicketId: createdTicket.id,
             userId: context.actorUserId,
             actionType: MaintenanceTicketHistoryActionType.OPENED,
-            description: `Chamado ${createdTicket.ticketId} aberto com status ${getMaintenanceStatusLabel(createdTicket.status)}.`,
+            description: `Chamado ${createdTicket.ticketId} aberto em ${getMaintenanceStatusLabel(createdTicket.status)}.`,
             newValue: {
               title: createdTicket.title,
               type: createdTicket.type,
               urgencyLevel: createdTicket.urgencyLevel,
+              triageDecision: createdTicket.triageDecision,
               severityJustification: createdTicket.severityJustification,
+            },
+          },
+        });
+
+        await tx.maintenanceTicketHistory.create({
+          data: {
+            maintenanceTicketId: createdTicket.id,
+            userId: context.actorUserId,
+            actionType: MaintenanceTicketHistoryActionType.TRIAGED,
+            description: `Triagem inicial classificada como ${getMaintenanceTriageDecisionLabel(triageDecision)}.`,
+            newValue: {
+              triageDecision,
+              triageNotes: createdTicket.triageNotes,
+              status: createdTicket.status,
+              urgencyLevel: createdTicket.urgencyLevel,
             },
           },
         });
@@ -658,6 +793,7 @@ export class MaintenanceService {
             type: createdTicket.type,
             urgencyLevel: createdTicket.urgencyLevel,
             severitySourceType: createdTicket.severitySourceType,
+            triageDecision: createdTicket.triageDecision,
           },
         );
 
@@ -698,6 +834,11 @@ export class MaintenanceService {
             urgencyLevel: true,
             severitySourceType: true,
             severityJustification: true,
+            triageDecision: true,
+            triageNotes: true,
+            triagedAt: true,
+            triagedByUserId: true,
+            status: true,
             internalNotes: true,
             propertyCodeSnapshot: true,
             propertyTitleSnapshot: true,
@@ -731,7 +872,7 @@ export class MaintenanceService {
           payload.assignedToUserId,
         );
         const resolvedType = payload.type ?? existing.type;
-        const severity = await this.evaluateSeverity({
+        const evaluatedSeverity = await this.evaluateSeverity({
           type: resolvedType,
           description: payload.description ?? existing.description,
           attachments: payload.attachments ?? [],
@@ -749,6 +890,21 @@ export class MaintenanceService {
           currentSeveritySourceType: existing.severitySourceType,
           currentSeverityJustification: existing.severityJustification,
         });
+        const resolvedTriageDecision =
+          payload.triageDecision === undefined || payload.triageDecision === null
+            ? existing.triageDecision ??
+              resolveDefaultTriageDecision(resolvedType, evaluatedSeverity.score)
+            : payload.triageDecision;
+        const severity = applyTriageDecisionToSeverity(
+          evaluatedSeverity,
+          resolvedTriageDecision,
+        );
+        const triageChanged =
+          resolvedTriageDecision !== existing.triageDecision ||
+          (payload.triageNotes !== undefined &&
+            normalizeOptionalString(payload.triageNotes) !==
+              existing.triageNotes);
+        const triageTimestamp = triageChanged ? new Date() : existing.triagedAt;
 
         const updatedTicket = await tx.maintenanceTicket.update({
           where: { id },
@@ -765,6 +921,20 @@ export class MaintenanceService {
             urgencyLevel: severity.score,
             severitySourceType: severity.sourceType,
             severityJustification: severity.justification,
+            triageDecision: resolvedTriageDecision,
+            triageNotes:
+              payload.triageNotes === undefined
+                ? existing.triageNotes
+                : normalizeOptionalString(payload.triageNotes),
+            triagedAt: triageTimestamp,
+            triagedByUserId: triageChanged
+              ? context.actorUserId
+              : existing.triagedByUserId,
+            status:
+              existing.status === MaintenanceTicketStatus.OPEN &&
+              resolvedTriageDecision
+                ? MaintenanceTicketStatus.TRIAGE
+                : existing.status,
             internalNotes:
               payload.internalNotes === undefined
                 ? existing.internalNotes
@@ -866,7 +1036,32 @@ export class MaintenanceService {
           });
         }
 
-        if (resolvedAssignedToUserId !== existing.assignedToUserId) {
+        if (triageChanged) {
+          await tx.maintenanceTicketHistory.create({
+            data: {
+              maintenanceTicketId: id,
+              userId: context.actorUserId,
+              actionType: MaintenanceTicketHistoryActionType.TRIAGED,
+              description: `Triagem atualizada para ${getMaintenanceTriageDecisionLabel(resolvedTriageDecision)}.`,
+              oldValue: {
+                triageDecision: existing.triageDecision,
+                triageNotes: existing.triageNotes,
+              },
+              newValue: {
+                triageDecision: resolvedTriageDecision,
+                triageNotes:
+                  payload.triageNotes === undefined
+                    ? existing.triageNotes
+                    : normalizeOptionalString(payload.triageNotes),
+              },
+            },
+          });
+        }
+
+        if (
+          resolvedAssignedToUserId !== undefined &&
+          resolvedAssignedToUserId !== existing.assignedToUserId
+        ) {
           await tx.maintenanceTicketHistory.create({
             data: {
               maintenanceTicketId: id,
@@ -926,7 +1121,8 @@ export class MaintenanceService {
         if (
           payload.type !== undefined ||
           payload.description !== undefined ||
-          payload.urgencyLevel !== undefined
+          payload.urgencyLevel !== undefined ||
+          payload.triageDecision !== undefined
         ) {
           await this.registerSeverityAssessment(
             tx,
@@ -1147,7 +1343,10 @@ export class MaintenanceService {
           });
         }
 
-        if (assignedToUserId !== existing.assignedToUserId) {
+        if (
+          assignedToUserId !== undefined &&
+          assignedToUserId !== existing.assignedToUserId
+        ) {
           await tx.maintenanceTicketHistory.create({
             data: {
               maintenanceTicketId: id,
@@ -1176,6 +1375,183 @@ export class MaintenanceService {
       return mapTicketBase(ticket);
     } catch (error) {
       rethrowPrismaError(error, "Falha ao atualizar status do chamado.");
+    }
+  }
+
+  async triage(
+    id: string,
+    payload: MaintenanceTriagePayload,
+    context: RequestContext,
+  ) {
+    if (!context.actorUserId) {
+      throw new HttpError(401, "Sessao invalida.");
+    }
+
+    try {
+      const ticket = await prisma.$transaction(async (tx) => {
+        const existing = await tx.maintenanceTicket.findUnique({
+          where: { id },
+          select: {
+            id: true,
+            ticketId: true,
+            status: true,
+            urgencyLevel: true,
+            severitySourceType: true,
+            severityJustification: true,
+            triageDecision: true,
+            triageNotes: true,
+            openedByUserId: true,
+            assignedToUserId: true,
+            resolvedAt: true,
+            finishedAt: true,
+          },
+        });
+
+        if (!existing) {
+          throw new HttpError(404, "Chamado de manutencao nao encontrado.");
+        }
+
+        this.ensureTicketAccess(existing, context);
+
+        if (isMaintenanceTerminalStatus(existing.status) && !this.canOverride(context)) {
+          throw new HttpError(
+            422,
+            "Chamados finalizados ou cancelados nao podem ser triados sem autorizacao MASTER.",
+          );
+        }
+
+        const assignedToUserId = await this.resolveAssignedUserId(
+          tx,
+          payload.assignedToUserId,
+        );
+        const nextStatus = resolveStatusForTriageDecision(payload.triageDecision);
+        const nextUrgencyLevel =
+          payload.triageDecision === MaintenanceTriageDecision.EMERGENCY
+            ? Math.max(existing.urgencyLevel, 5)
+            : payload.triageDecision === MaintenanceTriageDecision.NEEDS_QUOTE
+              ? Math.max(existing.urgencyLevel, 3)
+              : existing.urgencyLevel;
+        const triageNotes =
+          normalizeOptionalString(payload.triageNotes) ??
+          `Classificacao operacional: ${getMaintenanceTriageDecisionLabel(payload.triageDecision)}.`;
+        const now = new Date();
+
+        const updatedTicket = await tx.maintenanceTicket.update({
+          where: { id },
+          data: {
+            triageDecision: payload.triageDecision,
+            triageNotes,
+            triagedAt: now,
+            triagedByUserId: context.actorUserId,
+            status: nextStatus,
+            urgencyLevel: nextUrgencyLevel,
+            severityJustification:
+              nextUrgencyLevel !== existing.urgencyLevel
+                ? `${existing.severityJustification ?? "Avaliação operacional preservada."} Triagem ${getMaintenanceTriageDecisionLabel(payload.triageDecision).toLowerCase()} ajustou a prioridade para ${nextUrgencyLevel}/5.`
+                : existing.severityJustification,
+            assignedToUserId:
+              assignedToUserId === undefined
+                ? existing.assignedToUserId
+                : assignedToUserId,
+            resolvedAt: null,
+            finishedAt: null,
+            lastStatusChangeAt: now,
+          },
+          include: {
+            openedByUser: {
+              select: {
+                id: true,
+                fullName: true,
+              },
+            },
+            assignedToUser: {
+              select: {
+                id: true,
+                fullName: true,
+              },
+            },
+            _count: {
+              select: {
+                history: true,
+                documents: true,
+              },
+            },
+          },
+        });
+
+        await tx.maintenanceTicketHistory.create({
+          data: {
+            maintenanceTicketId: id,
+            userId: context.actorUserId,
+            actionType: MaintenanceTicketHistoryActionType.TRIAGED,
+            description: `Triagem classificada como ${getMaintenanceTriageDecisionLabel(payload.triageDecision)}.`,
+            oldValue: {
+              status: existing.status,
+              urgencyLevel: existing.urgencyLevel,
+              triageDecision: existing.triageDecision,
+              triageNotes: existing.triageNotes,
+              assignedToUserId: existing.assignedToUserId,
+            },
+            newValue: {
+              status: nextStatus,
+              urgencyLevel: nextUrgencyLevel,
+              triageDecision: payload.triageDecision,
+              triageNotes,
+              assignedToUserId:
+                assignedToUserId === undefined
+                  ? existing.assignedToUserId
+                  : assignedToUserId,
+            },
+          },
+        });
+
+        if (nextUrgencyLevel !== existing.urgencyLevel) {
+          await tx.maintenanceTicketHistory.create({
+            data: {
+              maintenanceTicketId: id,
+              userId: context.actorUserId,
+              actionType: MaintenanceTicketHistoryActionType.URGENCY_CHANGED,
+              description: "Prioridade ajustada pela triagem operacional.",
+              oldValue: { urgencyLevel: existing.urgencyLevel },
+              newValue: {
+                urgencyLevel: nextUrgencyLevel,
+                triageDecision: payload.triageDecision,
+              },
+            },
+          });
+        }
+
+        if (
+          assignedToUserId !== undefined &&
+          assignedToUserId !== existing.assignedToUserId
+        ) {
+          await tx.maintenanceTicketHistory.create({
+            data: {
+              maintenanceTicketId: id,
+              userId: context.actorUserId,
+              actionType: MaintenanceTicketHistoryActionType.ASSIGNED,
+              description: assignedToUserId
+                ? "Responsavel definido durante a triagem."
+                : "Responsavel removido durante a triagem.",
+              oldValue: { assignedToUserId: existing.assignedToUserId },
+              newValue: { assignedToUserId },
+            },
+          });
+        }
+
+        await this.audit("maintenance.triage", id, existing.ticketId, context, {
+          triageDecision: payload.triageDecision,
+          triageNotes,
+          status: nextStatus,
+          urgencyLevel: nextUrgencyLevel,
+        });
+
+        return updatedTicket;
+      });
+
+      return mapTicketBase(ticket);
+    } catch (error) {
+      rethrowPrismaError(error, "Falha ao registrar triagem do chamado.");
     }
   }
 
@@ -1334,6 +1710,17 @@ export class MaintenanceService {
           (ticket) => ticket.status === MaintenanceTicketStatus.CANCELLED,
         ).length,
         overdueCount: mappedTickets.filter((ticket) => ticket.isOverdue).length,
+        triageCount: tickets.filter(
+          (ticket) => ticket.status === MaintenanceTicketStatus.TRIAGE,
+        ).length,
+        unassignedCount: nonTerminalTickets.filter(
+          (ticket) => !ticket.assignedToUserId,
+        ).length,
+        emergencyCount: nonTerminalTickets.filter(
+          (ticket) =>
+            ticket.triageDecision === MaintenanceTriageDecision.EMERGENCY ||
+            ticket.urgencyLevel === 5,
+        ).length,
         averageResolutionHours,
       },
       charts: {
@@ -1442,7 +1829,9 @@ export class MaintenanceService {
         .filter(
           (ticket) =>
             ticket.urgencyLevel === 5 ||
+            ticket.triageDecision === MaintenanceTriageDecision.EMERGENCY ||
             ticket.isOverdue ||
+            !ticket.assignedToUser ||
             ticket.daysWithoutUpdate >= 2,
         )
         .slice(0, 10),
@@ -1485,6 +1874,9 @@ export class MaintenanceService {
       ...(query.propertyId ? { propertyId: query.propertyId } : {}),
       ...(query.status ? { status: query.status } : {}),
       ...(query.type ? { type: query.type } : {}),
+      ...(query.triageDecision
+        ? { triageDecision: query.triageDecision }
+        : {}),
       ...(query.urgencyLevel ? { urgencyLevel: query.urgencyLevel } : {}),
       ...(query.assignedToUserId
         ? { assignedToUserId: query.assignedToUserId }
@@ -1887,12 +2279,16 @@ export class MaintenanceService {
 
   private isCriticalTicket(ticket: {
     urgencyLevel: number;
+    assignedToUserId?: string | null;
+    triageDecision?: MaintenanceTriageDecision | null;
     status: MaintenanceTicketStatus;
     createdAt: Date;
     updatedAt: Date;
   }) {
     return (
       ticket.urgencyLevel === 5 ||
+      ticket.triageDecision === MaintenanceTriageDecision.EMERGENCY ||
+      !ticket.assignedToUserId ||
       (!isMaintenanceTerminalStatus(ticket.status) &&
         resolveSlaDueDate(ticket.createdAt, ticket.urgencyLevel) < new Date()) ||
       (!isMaintenanceTerminalStatus(ticket.status) &&

@@ -2,6 +2,7 @@ import { useDeferredValue, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   appRoutes,
+  maintenanceTriageDecisionOptions,
   maintenanceTicketStatusOptions,
   maintenanceTicketTypeOptions,
   maintenanceUrgencyOptions,
@@ -17,7 +18,12 @@ import { useAuth } from "@/features/auth/auth-context";
 import { MaintenanceModuleNav } from "@/features/maintenance/maintenance-module-nav";
 import { MaintenanceUrgencyBadge } from "@/features/maintenance/maintenance-urgency-badge";
 import { buildDetailPath, formatDateTime } from "@/lib/format";
-import { formatOpenDuration, getMaintenanceTypeLabel } from "@/lib/maintenance";
+import {
+  formatOpenDuration,
+  getMaintenanceTriageDecisionLabel,
+  getMaintenanceTriageTone,
+  getMaintenanceTypeLabel,
+} from "@/lib/maintenance";
 import { resolveStatusTone } from "@/lib/status";
 import { maintenanceService } from "@/services/maintenance-service";
 import { propertiesService } from "@/services/properties-service";
@@ -30,6 +36,7 @@ export function MaintenanceTicketsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [triageFilter, setTriageFilter] = useState("");
   const [urgencyFilter, setUrgencyFilter] = useState("");
   const [propertyFilter, setPropertyFilter] = useState("");
   const [assignedFilter, setAssignedFilter] = useState("");
@@ -46,6 +53,7 @@ export function MaintenanceTicketsPage() {
       deferredSearch,
       statusFilter,
       typeFilter,
+      triageFilter,
       urgencyFilter,
       propertyFilter,
       assignedFilter,
@@ -62,6 +70,7 @@ export function MaintenanceTicketsPage() {
         search: deferredSearch || undefined,
         status: statusFilter || undefined,
         type: typeFilter || undefined,
+        triageDecision: triageFilter || undefined,
         urgencyLevel: urgencyFilter || undefined,
         propertyId: propertyFilter || undefined,
         assignedToUserId: assignedFilter || undefined,
@@ -190,6 +199,22 @@ export function MaintenanceTicketsPage() {
           >
             <option value="">Todas as urgencias</option>
             {maintenanceUrgencyOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={triageFilter}
+            onChange={(event) => {
+              setTriageFilter(event.target.value);
+              setPage(1);
+            }}
+            className="filter-control"
+          >
+            <option value="">Todas as triagens</option>
+            {maintenanceTriageDecisionOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -328,6 +353,11 @@ export function MaintenanceTicketsPage() {
                       <div className="mt-2">
                         <MaintenanceUrgencyBadge urgencyLevel={ticket.urgencyLevel} />
                       </div>
+                      <span
+                        className={`mt-2 inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${getMaintenanceTriageTone(ticket.triageDecision)}`}
+                      >
+                        {getMaintenanceTriageDecisionLabel(ticket.triageDecision)}
+                      </span>
                     </td>
                     <td className="py-4 pr-4">
                       <StatusBadge

@@ -72,6 +72,7 @@ export async function syncMaintenanceSlaNotifications(
         type: true,
         urgencyLevel: true,
         status: true,
+        assignedToUserId: true,
         createdAt: true,
         updatedAt: true,
         propertyTitleSnapshot: true,
@@ -116,7 +117,11 @@ export async function syncMaintenanceSlaNotifications(
     }
 
     const dueDate = resolveSlaDueDate(ticket.createdAt, ticket.urgencyLevel);
-    if (dueDate > today) {
+    const isUrgent = ticket.urgencyLevel >= 5;
+    const isUnassigned = !ticket.assignedToUserId;
+    const isOverdue = dueDate <= today;
+
+    if (!isUrgent && !isUnassigned && !isOverdue) {
       continue;
     }
 
@@ -142,9 +147,13 @@ export async function syncMaintenanceSlaNotifications(
         userId,
         type: NotificationType.MAINTENANCE_SLA,
         severity: getNotificationSeverityForUrgency(ticket.urgencyLevel),
-        title: isInProgress
-          ? `Chamado ${ticket.ticketId} segue em aberto`
-          : `Chamado ${ticket.ticketId} exige acompanhamento`,
+        title: isUnassigned
+          ? `Chamado ${ticket.ticketId} sem responsável`
+          : isUrgent
+            ? `Chamado ${ticket.ticketId} urgente`
+            : isInProgress
+              ? `Chamado ${ticket.ticketId} segue em aberto`
+              : `Chamado ${ticket.ticketId} exige acompanhamento`,
         message: `${ticket.ticketId} | ${ticket.propertyCodeSnapshot} - ${ticket.propertyTitleSnapshot} | Tipo: ${typeLabel} | Urgencia: ${urgencyLabel} | Status: ${statusLabel} | Tempo em aberto: ${daysOpen} dia(s).`,
         entityType: AuditEntityType.MAINTENANCE_TICKET,
         entityId: ticket.id,

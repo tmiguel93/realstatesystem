@@ -35,7 +35,7 @@ export function MaintenanceTicketNewPage() {
       <PageHeader
         eyebrow="Operacao tecnica"
         title="Abrir chamado de manutencao"
-        description="Registre o ticket com vinculo ao imovel, locatario atual, urgencia automatica, responsavel e trilha inicial de anexos."
+        description="Registre o ticket com imóvel, locatário atual, categoria, triagem simples, urgência automática, responsável e anexos."
       />
 
       <MaintenanceModuleNav />
@@ -45,7 +45,7 @@ export function MaintenanceTicketNewPage() {
         description={
           hasPermission(permissionCodes.MAINTENANCE_OVERRIDE)
             ? "Voce possui acesso a override de urgencia e ajuste manual de locatario com auditoria."
-            : "A urgencia segue a regra automatica do tipo de chamado e o locatario ativo e vinculado quando existir."
+            : "A urgência segue a regra automática da categoria, e o locatário ativo é vinculado quando existir."
         }
       >
         {accessToken ? (

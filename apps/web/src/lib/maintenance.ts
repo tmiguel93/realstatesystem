@@ -1,4 +1,5 @@
 import {
+  maintenanceTriageDecisionOptions,
   maintenanceTicketStatusOptions,
   maintenanceTicketTypeOptions,
   maintenanceUrgencyOptions,
@@ -24,6 +25,30 @@ export function getMaintenanceUrgencyLabel(urgencyLevel: number) {
       (item) => Number(item.value) === Number(urgencyLevel),
     )?.label ?? `${urgencyLevel}`
   );
+}
+
+export function getMaintenanceTriageDecisionLabel(decision?: string | null) {
+  if (!decision) {
+    return "Não classificado";
+  }
+
+  return (
+    maintenanceTriageDecisionOptions.find((item) => item.value === decision)
+      ?.label ?? decision
+  );
+}
+
+export function getMaintenanceTriageTone(decision?: string | null) {
+  switch (decision) {
+    case "EMERGENCY":
+      return "border-rose-200 bg-rose-50 text-rose-700";
+    case "NEEDS_QUOTE":
+      return "border-amber-200 bg-amber-50 text-amber-800";
+    case "INTERNAL_REPAIR":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    default:
+      return "border-ink-200 bg-white text-ink-600";
+  }
 }
 
 export function getMaintenanceUrgencyTone(urgencyLevel: number) {
@@ -64,10 +89,37 @@ export function resolveSuggestedUrgency(type: string) {
     PREVENTIVE: 1,
     CORRECTIVE: 3,
     EMERGENCY: 5,
+    CONDOMINIUM: 3,
     OTHER: 1,
   };
 
   return urgencyByType[type] ?? 1;
+}
+
+export function resolveSuggestedTriageDecision(type: string) {
+  const urgency = resolveSuggestedUrgency(type);
+
+  if (urgency >= 5 || ["EMERGENCY", "GAS", "ELECTRICAL"].includes(type)) {
+    return "EMERGENCY";
+  }
+
+  if (
+    [
+      "HYDRAULIC",
+      "STRUCTURAL",
+      "ROOFING",
+      "LEAKAGE",
+      "SEWAGE",
+      "LOCKS_SECURITY",
+      "HVAC",
+      "EQUIPMENT",
+      "CONDOMINIUM",
+    ].includes(type)
+  ) {
+    return "NEEDS_QUOTE";
+  }
+
+  return "INTERNAL_REPAIR";
 }
 
 export function requiresMaintenanceEvidence(type: string) {
@@ -82,6 +134,7 @@ export function requiresMaintenanceEvidence(type: string) {
     "LANDSCAPING",
     "EQUIPMENT",
     "FIXED_FURNITURE",
+    "CONDOMINIUM",
     "OTHER",
   ].includes(type);
 }

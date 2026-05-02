@@ -230,6 +230,7 @@ enum MaintenanceTicketType {
   PREVENTIVE
   CORRECTIVE
   EMERGENCY
+  CONDOMINIUM
   OTHER
 }
 
@@ -250,6 +251,12 @@ enum MaintenanceSeveritySourceType {
   MANUAL
 }
 
+enum MaintenanceTriageDecision {
+  EMERGENCY
+  NEEDS_QUOTE
+  INTERNAL_REPAIR
+}
+
 enum TenantPortalAccessStatus {
   ACTIVE
   INACTIVE
@@ -258,6 +265,7 @@ enum TenantPortalAccessStatus {
 
 enum MaintenanceTicketHistoryActionType {
   OPENED
+  TRIAGED
   DETAILS_UPDATED
   STATUS_CHANGED
   ASSIGNED
@@ -354,6 +362,7 @@ model User {
   uploadedPropertyImages   PropertyImage[]      @relation("PropertyImageUploadedBy")
   openedMaintenanceTickets MaintenanceTicket[]  @relation("MaintenanceTicketOpenedBy")
   assignedMaintenanceTickets MaintenanceTicket[] @relation("MaintenanceTicketAssignedTo")
+  triagedMaintenanceTickets  MaintenanceTicket[] @relation("MaintenanceTicketTriagedBy")
   maintenanceTicketHistoryEntries MaintenanceTicketHistory[] @relation("MaintenanceTicketHistoryUser")
   maintenanceSeverityAssessments MaintenanceSeverityAssessment[] @relation("MaintenanceSeverityEvaluatedBy")
   tenantPortalAccesses     TenantPortalAccess[]
@@ -828,11 +837,15 @@ model MaintenanceTicket {
   assignedToUserId   String?                   @db.Uuid
   title              String                    @db.VarChar(180)
   description        String                    @db.Text
-  type               MaintenanceTicketType
-  urgencyLevel       Int
-  severitySourceType MaintenanceSeveritySourceType @default(RULE)
-  severityJustification String?                @db.Text
-  status             MaintenanceTicketStatus   @default(OPEN)
+    type               MaintenanceTicketType
+    urgencyLevel       Int
+    severitySourceType MaintenanceSeveritySourceType @default(RULE)
+    severityJustification String?                @db.Text
+    triageDecision     MaintenanceTriageDecision?
+    triageNotes        String?                   @db.Text
+    triagedAt          DateTime?
+    triagedByUserId    String?                   @db.Uuid
+    status             MaintenanceTicketStatus   @default(OPEN)
   propertyCodeSnapshot String                  @db.VarChar(40)
   propertyTitleSnapshot String                 @db.VarChar(180)
   addressSnapshot    String                    @db.VarChar(220)
@@ -851,9 +864,10 @@ model MaintenanceTicket {
   openedViaTenantPortal Boolean                @default(false)
   property           Property                  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
   tenant             Tenant?                   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
-  openedByUser       User                      @relation("MaintenanceTicketOpenedBy", fields: [openedByUserId], references: [id], onDelete: Restrict)
-  assignedToUser     User?                     @relation("MaintenanceTicketAssignedTo", fields: [assignedToUserId], references: [id], onDelete: SetNull)
-  history            MaintenanceTicketHistory[]
+    openedByUser       User                      @relation("MaintenanceTicketOpenedBy", fields: [openedByUserId], references: [id], onDelete: Restrict)
+    assignedToUser     User?                     @relation("MaintenanceTicketAssignedTo", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+    triagedByUser      User?                     @relation("MaintenanceTicketTriagedBy", fields: [triagedByUserId], references: [id], onDelete: SetNull)
+    history            MaintenanceTicketHistory[]
   severityAssessments MaintenanceSeverityAssessment[]
   documents          Document[]                @relation("DocumentMaintenanceTicket")
 
@@ -861,11 +875,13 @@ model MaintenanceTicket {
   @@index([propertyId])
   @@index([tenantId])
   @@index([openedByUserId])
-  @@index([assignedToUserId])
-  @@index([status, createdAt])
-  @@index([type])
-  @@index([urgencyLevel])
-}
+    @@index([assignedToUserId])
+    @@index([triagedByUserId])
+    @@index([status, createdAt])
+    @@index([type])
+    @@index([urgencyLevel])
+    @@index([triageDecision])
+  }
 
 model MaintenanceTicketHistory {
   id                  String                              @id @default(uuid()) @db.Uuid

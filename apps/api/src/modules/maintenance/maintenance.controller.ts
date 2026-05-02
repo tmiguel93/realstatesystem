@@ -7,6 +7,7 @@ import {
   maintenanceTicketIdParamSchema,
   maintenanceTicketsListQuerySchema,
   maintenanceTicketStatusSchema,
+  maintenanceTicketTriageSchema,
   maintenanceTicketUpdateSchema,
 } from "./maintenance.schemas";
 
@@ -89,6 +90,17 @@ export class MaintenanceController {
     const params = maintenanceTicketIdParamSchema.parse(request.params);
     const payload = maintenanceTicketStatusSchema.parse(request.body);
     const result = await maintenanceService.updateStatus(
+      params.id,
+      payload,
+      getRequestContext(request),
+    );
+    return response.status(200).json(result);
+  }
+
+  async triage(request: Request, response: Response) {
+    const params = maintenanceTicketIdParamSchema.parse(request.params);
+    const payload = maintenanceTicketTriageSchema.parse(request.body);
+    const result = await maintenanceService.triage(
       params.id,
       payload,
       getRequestContext(request),

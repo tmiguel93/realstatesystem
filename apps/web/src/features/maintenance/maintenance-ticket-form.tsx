@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  maintenanceTriageDecisionOptions,
   maintenanceTicketTypeOptions,
   maintenanceUrgencyOptions,
   permissionCodes,
@@ -14,7 +15,10 @@ import { FormTextarea } from "@/components/form/form-textarea";
 import { MaintenanceUrgencyBadge } from "@/features/maintenance/maintenance-urgency-badge";
 import {
   getMaintenanceUrgencyLabel,
+  getMaintenanceTriageDecisionLabel,
+  getMaintenanceTriageTone,
   resolveSuggestedUrgency,
+  resolveSuggestedTriageDecision,
 } from "@/lib/maintenance";
 import { useAuth } from "@/features/auth/auth-context";
 import { maintenanceService } from "@/services/maintenance-service";
@@ -35,6 +39,8 @@ const maintenanceTicketFormSchema = z.object({
   title: z.string().trim().min(4, "Informe um titulo curto."),
   description: z.string().trim().min(12, "Descreva melhor o problema."),
   type: z.string().trim().min(1, "Selecione o tipo."),
+  triageDecision: z.string().trim().min(1, "Selecione a triagem inicial."),
+  triageNotes: z.string().trim().optional(),
   urgencyLevel: z.string().optional(),
   assignedToUserId: z.string().optional(),
   internalNotes: z.string().trim().optional(),
@@ -54,6 +60,8 @@ type MaintenanceTicketFormProps = {
     title: string;
     description: string;
     type: string;
+    triageDecision?: string | null;
+    triageNotes?: string | null;
     urgencyLevel?: number | null;
     assignedToUserId?: string | null;
     internalNotes?: string | null;
@@ -91,6 +99,8 @@ export function MaintenanceTicketForm({
       title: "",
       description: "",
       type: "CORRECTIVE",
+      triageDecision: "INTERNAL_REPAIR",
+      triageNotes: "",
       urgencyLevel: "",
       assignedToUserId: "",
       internalNotes: "",
@@ -105,7 +115,9 @@ export function MaintenanceTicketForm({
 
   const propertyId = watch("propertyId");
   const selectedType = watch("type");
+  const selectedTriageDecision = watch("triageDecision");
   const suggestedUrgency = resolveSuggestedUrgency(selectedType);
+  const suggestedTriageDecision = resolveSuggestedTriageDecision(selectedType);
 
   const propertiesQuery = useQuery({
     queryKey: ["maintenance-form-properties", deferredPropertySearch],
@@ -145,6 +157,10 @@ export function MaintenanceTicketForm({
       }),
     enabled: Boolean(accessToken && allowOverride),
   });
+
+  useEffect(() => {
+    setValue("triageDecision", suggestedTriageDecision);
+  }, [setValue, suggestedTriageDecision]);
 
   useEffect(() => {
     if (!propertyContextQuery.data?.activeTenant) {
@@ -195,6 +211,8 @@ export function MaintenanceTicketForm({
       title: values.title,
       description: values.description,
       type: values.type,
+      triageDecision: values.triageDecision || null,
+      triageNotes: values.triageNotes?.trim() ? values.triageNotes : null,
       urgencyLevel:
         allowOverride && values.urgencyLevel
           ? Number(values.urgencyLevel)
@@ -293,7 +311,7 @@ export function MaintenanceTicketForm({
           </div>
 
           <FormSelect
-            label="Tipo do chamado"
+            label="Categoria do chamado"
             options={maintenanceTicketTypeOptions.map((item) => ({
               value: item.value,
               label: item.label,
@@ -312,6 +330,50 @@ export function MaintenanceTicketForm({
                 {getMaintenanceUrgencyLabel(suggestedUrgency)}
               </p>
             </div>
+          </div>
+
+          <div className="md:col-span-2 rounded-[28px] border border-brand-100 bg-brand-50/60 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-ink-900">
+                  Triagem inicial sugerida
+                </p>
+                <p className="mt-1 text-sm text-ink-500">
+                  O sistema sugere uma classificação operacional com base na categoria e na urgência.
+                </p>
+              </div>
+              <span
+                className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${getMaintenanceTriageTone(selectedTriageDecision)}`}
+              >
+                {getMaintenanceTriageDecisionLabel(selectedTriageDecision)}
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {maintenanceTriageDecisionOptions.map((option) => (
+                <label
+                  key={option.value}
+                  className={`cursor-pointer rounded-[22px] border px-4 py-3 text-sm font-semibold transition ${
+                    selectedTriageDecision === option.value
+                      ? getMaintenanceTriageTone(option.value)
+                      : "border-ink-200 bg-white text-ink-600 hover:border-brand-200"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    value={option.value}
+                    className="sr-only"
+                    {...register("triageDecision")}
+                  />
+                  {option.label}
+                </label>
+              ))}
+            </div>
+            {errors.triageDecision?.message ? (
+              <p className="mt-2 text-sm text-rose-600">
+                {errors.triageDecision.message}
+              </p>
+            ) : null}
           </div>
 
           {allowOverride ? (
@@ -365,6 +427,13 @@ export function MaintenanceTicketForm({
               label="Observacoes internas"
               placeholder="Notas administrativas, orientacoes de triagem ou contexto adicional."
               {...register("internalNotes")}
+            />
+          </div>
+          <div className="md:col-span-2">
+            <FormTextarea
+              label="Observação da triagem"
+              placeholder="Explique em uma frase o motivo da classificação, se houver."
+              {...register("triageNotes")}
             />
           </div>
         </div>

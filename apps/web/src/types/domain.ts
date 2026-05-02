@@ -748,6 +748,10 @@ export type MaintenanceTicketListItem = {
   urgencyLabel: string;
   severitySourceType: string;
   severityJustification: string | null;
+  triageDecision: string | null;
+  triageLabel: string;
+  triageNotes: string | null;
+  triagedAt: string | null;
   status: string;
   statusLabel: string;
   createdAt: string;
@@ -786,6 +790,11 @@ export type MaintenanceTicketDetail = MaintenanceTicketListItem & {
   resolutionSummary: string | null;
   cancelReason: string | null;
   lastStatusChangeAt: string;
+  triagedByUser: {
+    id: string;
+    fullName: string;
+    email: string;
+  } | null;
   severityAssessments: Array<{
     id: string;
     sourceType: string;
@@ -888,6 +897,9 @@ export type MaintenanceDashboard = {
     finished: number;
     cancelled: number;
     overdueCount: number;
+    triageCount: number;
+    unassignedCount: number;
+    emergencyCount: number;
     averageResolutionHours: number;
   };
   charts: {

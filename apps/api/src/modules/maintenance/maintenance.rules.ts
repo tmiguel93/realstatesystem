@@ -1,9 +1,11 @@
 import {
+  MaintenanceTriageDecision,
   MaintenanceTicketStatus,
   MaintenanceTicketType,
   NotificationSeverity,
 } from "@prisma/client";
 import {
+  maintenanceTriageDecisionOptions,
   maintenanceTicketStatusOptions,
   maintenanceTicketTypeOptions,
 } from "@imobiliaria/shared";
@@ -30,6 +32,7 @@ const urgencyByType: Record<MaintenanceTicketType, number> = {
   PREVENTIVE: 1,
   CORRECTIVE: 3,
   EMERGENCY: 5,
+  CONDOMINIUM: 3,
   OTHER: 1,
 };
 
@@ -88,6 +91,19 @@ export function getMaintenanceStatusLabel(
   );
 }
 
+export function getMaintenanceTriageDecisionLabel(
+  decision: MaintenanceTriageDecision | string | null | undefined,
+) {
+  if (!decision) {
+    return "Não classificado";
+  }
+
+  return (
+    maintenanceTriageDecisionOptions.find((item) => item.value === decision)
+      ?.label ?? decision
+  );
+}
+
 export function getMaintenanceUrgencyLabel(urgencyLevel: number) {
   return `${urgencyLevel} - ${
     {
@@ -95,8 +111,8 @@ export function getMaintenanceUrgencyLabel(urgencyLevel: number) {
       2: "Moderada",
       3: "Alta",
       4: "Muito alta",
-      5: "Urgentissimo",
-    }[urgencyLevel] ?? "Nao classificada"
+      5: "Urgentíssimo",
+    }[urgencyLevel] ?? "Não classificada"
   }`;
 }
 

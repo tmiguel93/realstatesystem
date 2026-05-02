@@ -170,23 +170,43 @@ export const maintenanceTicketTypeOptions = [
   { value: "PREVENTIVE", label: "Preventiva" },
   { value: "CORRECTIVE", label: "Corretiva" },
   { value: "EMERGENCY", label: "Emergencial" },
+  { value: "CONDOMINIUM", label: "Condomínio" },
   { value: "OTHER", label: "Outros" },
 ] as const;
 
 export const maintenanceTicketStatusOptions = [
   { value: "OPEN", label: "Aberto" },
-  { value: "TRIAGE", label: "Triagem" },
-  { value: "WAITING_APPROVAL", label: "Aguardando aprovação" },
-  { value: "WAITING_PROVIDER", label: "Aguardando prestador" },
-  { value: "IN_PROGRESS", label: "Em andamento" },
+  { value: "TRIAGE", label: "Em análise" },
+  { value: "WAITING_APPROVAL", label: "Aprovado" },
+  { value: "WAITING_PROVIDER", label: "Aguardando orçamento" },
+  { value: "IN_PROGRESS", label: "Em execução" },
   { value: "WAITING_MATERIAL", label: "Aguardando material" },
   { value: "RESOLVED", label: "Resolvido" },
   { value: "FINISHED", label: "Finalizado" },
   { value: "CANCELLED", label: "Cancelado" },
 ] as const;
 
+export const maintenanceSimpleStatusOptions =
+  maintenanceTicketStatusOptions.filter((item) =>
+    [
+      "OPEN",
+      "TRIAGE",
+      "WAITING_PROVIDER",
+      "WAITING_APPROVAL",
+      "IN_PROGRESS",
+      "RESOLVED",
+      "CANCELLED",
+    ].includes(item.value),
+  );
+
 export const maintenanceKanbanStatusOptions =
   maintenanceTicketStatusOptions.filter((item) => item.value !== "CANCELLED");
+
+export const maintenanceTriageDecisionOptions = [
+  { value: "EMERGENCY", label: "Emergencial" },
+  { value: "NEEDS_QUOTE", label: "Precisa orçamento" },
+  { value: "INTERNAL_REPAIR", label: "Resolver internamente" },
+] as const;
 
 export const maintenanceUrgencyOptions = [
   { value: "1", label: "1 · Baixa" },

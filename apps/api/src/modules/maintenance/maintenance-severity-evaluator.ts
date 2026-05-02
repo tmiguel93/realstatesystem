@@ -41,6 +41,7 @@ const baseScoreByType: Record<MaintenanceTicketType, number> = {
   PREVENTIVE: 1,
   CORRECTIVE: 3,
   EMERGENCY: 5,
+  CONDOMINIUM: 3,
   OTHER: 1,
 };
 
@@ -55,6 +56,7 @@ const visualEvidenceRequiredTypes = new Set<MaintenanceTicketType>([
   MaintenanceTicketType.LANDSCAPING,
   MaintenanceTicketType.EQUIPMENT,
   MaintenanceTicketType.FIXED_FURNITURE,
+  MaintenanceTicketType.CONDOMINIUM,
   MaintenanceTicketType.OTHER,
 ]);
 
@@ -87,6 +89,8 @@ const highAttentionKeywords = [
   "mofado",
   "odor",
   "esgoto",
+  "condomínio",
+  "condominio",
 ];
 
 class RuleBasedMaintenanceSeverityAdapter
