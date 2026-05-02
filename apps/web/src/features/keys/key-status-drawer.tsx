@@ -19,6 +19,7 @@ type KeyStatusValues = z.infer<typeof keyStatusSchema>;
 type KeyStatusDrawerProps = {
   open: boolean;
   keyItem?: PropertyKeyListItem | null;
+  canOverride?: boolean;
   pending?: boolean;
   onClose: () => void;
   onSubmit: (values: {
@@ -36,6 +37,7 @@ function toNullable(value?: string) {
 export function KeyStatusDrawer({
   open,
   keyItem,
+  canOverride = false,
   pending,
   onClose,
   onSubmit,
@@ -108,8 +110,10 @@ export function KeyStatusDrawer({
           error={errors.status?.message}
           {...register("status")}
         />
-        <FormTextarea label="Observacoes" {...register("notes")} />
-        <FormTextarea label="Justificativa de override" {...register("overrideReason")} />
+        <FormTextarea label="Observações" {...register("notes")} />
+        {canOverride ? (
+          <FormTextarea label="Justificativa de override" {...register("overrideReason")} />
+        ) : null}
       </form>
     </Drawer>
   );

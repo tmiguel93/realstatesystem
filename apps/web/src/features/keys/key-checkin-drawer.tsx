@@ -10,10 +10,18 @@ import type { PropertyKeyListItem } from "@/types/domain";
 
 const checkinSchema = z.object({
   returnedAt: z.string().trim().optional(),
+  receivedBy: z.string().trim().min(2, "Informe quem recebeu."),
+  keyCondition: z.string().trim().min(1, "Selecione o estado da chave."),
   notes: z.string().trim().optional(),
 });
 
 type CheckinValues = z.infer<typeof checkinSchema>;
+
+const keyConditionOptions = [
+  { value: "Normal", label: "Normal" },
+  { value: "Com observação", label: "Com observação" },
+  { value: "Problema identificado", label: "Problema identificado" },
+];
 
 type KeyCheckinDrawerProps = {
   open: boolean;
@@ -47,10 +55,13 @@ export function KeyCheckinDrawer({
     register,
     reset,
     handleSubmit,
+    formState: { errors },
   } = useForm<CheckinValues>({
     resolver: zodResolver(checkinSchema),
     defaultValues: {
       returnedAt: toDateTimeLocalValue(new Date()),
+      receivedBy: "",
+      keyCondition: "Normal",
       notes: "",
     },
   });
@@ -59,15 +70,23 @@ export function KeyCheckinDrawer({
     if (open) {
       reset({
         returnedAt: toDateTimeLocalValue(new Date()),
+        receivedBy: "",
+        keyCondition: "Normal",
         notes: "",
       });
     }
   }, [open, reset]);
 
   const submit = handleSubmit(async (values) => {
+    const notes = [
+      `Recebido por: ${values.receivedBy}`,
+      `Estado da chave: ${values.keyCondition}`,
+      toNullable(values.notes),
+    ].filter(Boolean).join("\n");
+
     await onSubmit({
       returnedAt: toIsoOrNull(values.returnedAt),
-      notes: toNullable(values.notes),
+      notes: notes || null,
     });
   });
 
@@ -98,8 +117,32 @@ export function KeyCheckinDrawer({
       }
     >
       <form id="key-checkin-form" className="space-y-6" onSubmit={submit}>
-        <FormInput label="Data da devolucao" type="datetime-local" {...register("returnedAt")} />
-        <FormTextarea label="Observacoes" {...register("notes")} />
+        <div className="grid gap-4 md:grid-cols-2">
+          <FormInput label="Data da devolução" type="datetime-local" {...register("returnedAt")} />
+          <FormInput
+            label="Quem recebeu"
+            error={errors.receivedBy?.message}
+            {...register("receivedBy")}
+          />
+          <label className="block space-y-2">
+            <span className="text-sm font-semibold text-ink-700">
+              Estado da chave
+            </span>
+            <select className="field-control" {...register("keyCondition")}>
+              {keyConditionOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            {errors.keyCondition?.message ? (
+              <p className="text-sm text-rose-600">
+                {errors.keyCondition.message}
+              </p>
+            ) : null}
+          </label>
+        </div>
+        <FormTextarea label="Observações" {...register("notes")} />
       </form>
     </Drawer>
   );

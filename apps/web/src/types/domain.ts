@@ -560,6 +560,10 @@ export type PropertyKeyListItem = {
     id: string;
     code: string;
     title: string;
+    city: string;
+    district: string;
+    street: string;
+    streetNumber: string;
   };
 };
 

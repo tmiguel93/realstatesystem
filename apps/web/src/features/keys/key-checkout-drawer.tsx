@@ -14,6 +14,7 @@ const checkoutSchema = z.object({
   holderType: z.string().trim().min(1, "Selecione quem retirou."),
   holderName: z.string().trim().min(3, "Informe quem retirou."),
   holderDocument: z.string().trim().optional(),
+  purpose: z.string().trim().min(1, "Selecione a finalidade."),
   checkoutAt: z.string().trim().optional(),
   expectedReturnAt: z.string().trim().optional(),
   notes: z.string().trim().optional(),
@@ -22,9 +23,19 @@ const checkoutSchema = z.object({
 
 type CheckoutValues = z.infer<typeof checkoutSchema>;
 
+const checkoutPurposeOptions = [
+  { value: "Visita", label: "Visita" },
+  { value: "Manutenção", label: "Manutenção" },
+  { value: "Vistoria", label: "Vistoria" },
+  { value: "Corretor", label: "Corretor" },
+  { value: "Proprietário", label: "Proprietário" },
+  { value: "Outro", label: "Outro" },
+];
+
 type KeyCheckoutDrawerProps = {
   open: boolean;
   keyItem?: PropertyKeyListItem | null;
+  canOverride?: boolean;
   pending?: boolean;
   onClose: () => void;
   onSubmit: (values: {
@@ -51,6 +62,7 @@ function toIsoOrNull(value?: string) {
 export function KeyCheckoutDrawer({
   open,
   keyItem,
+  canOverride = false,
   pending,
   onClose,
   onSubmit,
@@ -66,6 +78,7 @@ export function KeyCheckoutDrawer({
       holderType: "CLIENT",
       holderName: "",
       holderDocument: "",
+      purpose: "Visita",
       checkoutAt: toDateTimeLocalValue(new Date()),
       expectedReturnAt: "",
       notes: "",
@@ -79,6 +92,7 @@ export function KeyCheckoutDrawer({
         holderType: "CLIENT",
         holderName: "",
         holderDocument: "",
+        purpose: "Visita",
         checkoutAt: toDateTimeLocalValue(new Date()),
         expectedReturnAt: "",
         notes: "",
@@ -88,13 +102,18 @@ export function KeyCheckoutDrawer({
   }, [open, reset]);
 
   const submit = handleSubmit(async (values) => {
+    const notes = [
+      `Finalidade: ${values.purpose}`,
+      toNullable(values.notes),
+    ].filter(Boolean).join("\n");
+
     await onSubmit({
       holderType: values.holderType,
       holderName: values.holderName,
       holderDocument: toNullable(values.holderDocument),
       checkoutAt: toIsoOrNull(values.checkoutAt),
       expectedReturnAt: toIsoOrNull(values.expectedReturnAt),
-      notes: toNullable(values.notes),
+      notes: notes || null,
       overrideReason: toNullable(values.overrideReason),
     });
   });
@@ -142,6 +161,12 @@ export function KeyCheckoutDrawer({
             {...register("holderName")}
           />
           <FormInput label="Documento" {...register("holderDocument")} />
+          <FormSelect
+            label="Finalidade"
+            options={checkoutPurposeOptions}
+            error={errors.purpose?.message}
+            {...register("purpose")}
+          />
           <FormInput label="Data da retirada" type="datetime-local" {...register("checkoutAt")} />
           <FormInput
             label="Devolucao esperada"
@@ -150,8 +175,10 @@ export function KeyCheckoutDrawer({
           />
         </div>
 
-        <FormTextarea label="Observacoes" {...register("notes")} />
-        <FormTextarea label="Justificativa de override" {...register("overrideReason")} />
+        <FormTextarea label="Observações" {...register("notes")} />
+        {canOverride ? (
+          <FormTextarea label="Justificativa de override" {...register("overrideReason")} />
+        ) : null}
       </form>
     </Drawer>
   );

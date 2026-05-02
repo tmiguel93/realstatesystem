@@ -19,6 +19,7 @@ type KeyFormValues = z.infer<typeof keySchema>;
 type KeyFormDrawerProps = {
   open: boolean;
   propertyOptions: Array<{ value: string; label: string }>;
+  initialPropertyId?: string;
   pending?: boolean;
   onClose: () => void;
   onSubmit: (values: {
@@ -37,6 +38,7 @@ function toNullable(value?: string) {
 export function KeyFormDrawer({
   open,
   propertyOptions,
+  initialPropertyId,
   pending,
   onClose,
   onSubmit,
@@ -51,7 +53,7 @@ export function KeyFormDrawer({
   } = useForm<KeyFormValues>({
     resolver: zodResolver(keySchema),
     defaultValues: {
-      propertyId: "",
+      propertyId: initialPropertyId ?? "",
       identifier: "",
       description: "",
       isCopy: false,
@@ -61,13 +63,13 @@ export function KeyFormDrawer({
   useEffect(() => {
     if (open) {
       reset({
-        propertyId: "",
+        propertyId: initialPropertyId ?? "",
         identifier: "",
         description: "",
         isCopy: false,
       });
     }
-  }, [open, reset]);
+  }, [initialPropertyId, open, reset]);
 
   const isCopy = watch("isCopy");
 

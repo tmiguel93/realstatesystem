@@ -73,6 +73,24 @@ function isKeyAvailableForCheckout(status: KeyStatus) {
   return status === KeyStatus.AVAILABLE || status === KeyStatus.COPY;
 }
 
+function ensureCheckoutDatesAreCoherent(
+  checkoutAt: Date,
+  expectedReturnAt?: Date | null,
+) {
+  const toleranceMs = 5 * 60 * 1000;
+
+  if (checkoutAt.getTime() > Date.now() + toleranceMs) {
+    throw new HttpError(422, "A retirada nao pode ser registrada no futuro.");
+  }
+
+  if (expectedReturnAt && expectedReturnAt.getTime() <= checkoutAt.getTime()) {
+    throw new HttpError(
+      422,
+      "A previsao de devolucao deve ser posterior a retirada.",
+    );
+  }
+}
+
 function mapKeyBase(key: {
   id: string;
   identifier: string;
@@ -89,6 +107,10 @@ function mapKeyBase(key: {
     id: string;
     code: string;
     title: string;
+    city: string;
+    district: string;
+    street: string;
+    streetNumber: string;
   };
   controls: Array<{
     expectedReturnAt: Date | null;
@@ -130,8 +152,11 @@ export class KeysService {
             OR: [
               { identifier: { contains: query.search, mode: "insensitive" } },
               { currentHolderName: { contains: query.search, mode: "insensitive" } },
+              { currentHolderDocument: { contains: query.search, mode: "insensitive" } },
               { property: { code: { contains: query.search, mode: "insensitive" } } },
               { property: { title: { contains: query.search, mode: "insensitive" } } },
+              { property: { street: { contains: query.search, mode: "insensitive" } } },
+              { property: { district: { contains: query.search, mode: "insensitive" } } },
             ],
           }
         : {}),
@@ -164,6 +189,10 @@ export class KeysService {
               id: true,
               code: true,
               title: true,
+              city: true,
+              district: true,
+              street: true,
+              streetNumber: true,
             },
           },
           controls: {
@@ -199,6 +228,8 @@ export class KeysService {
             title: true,
             city: true,
             district: true,
+            street: true,
+            streetNumber: true,
           },
         },
         controls: {
@@ -262,6 +293,10 @@ export class KeysService {
               id: true,
               code: true,
               title: true,
+              city: true,
+              district: true,
+              street: true,
+              streetNumber: true,
             },
           },
           controls: {
@@ -295,6 +330,7 @@ export class KeysService {
   async checkout(id: string, payload: KeyCheckoutPayload, context: RequestContext) {
     const key = await this.getKeyForMutation(id);
     const checkoutAt = payload.checkoutAt ?? new Date();
+    ensureCheckoutDatesAreCoherent(checkoutAt, payload.expectedReturnAt);
     const canOverride = context.permissions?.includes(permissionCodes.KEYS_OVERRIDE);
     const requiresOverride =
       key.currentStatus === KeyStatus.CHECKED_OUT ||
@@ -337,6 +373,10 @@ export class KeysService {
                 id: true,
                 code: true,
                 title: true,
+                city: true,
+                district: true,
+                street: true,
+                streetNumber: true,
               },
             },
             controls: {
@@ -399,6 +439,13 @@ export class KeysService {
       );
     }
 
+    if (key.lastCheckoutAt && returnedAt.getTime() < key.lastCheckoutAt.getTime()) {
+      throw new HttpError(
+        422,
+        "A devolucao nao pode ser anterior a retirada registrada.",
+      );
+    }
+
     const openCheckout = await prisma.keyControl.findFirst({
       where: {
         propertyKeyId: id,
@@ -442,6 +489,10 @@ export class KeysService {
                 id: true,
                 code: true,
                 title: true,
+                city: true,
+                district: true,
+                street: true,
+                streetNumber: true,
               },
             },
             controls: {
@@ -554,6 +605,10 @@ export class KeysService {
                 id: true,
                 code: true,
                 title: true,
+                city: true,
+                district: true,
+                street: true,
+                streetNumber: true,
               },
             },
             controls: {
@@ -623,6 +678,7 @@ export class KeysService {
         currentHolderType: true,
         currentHolderName: true,
         currentHolderDocument: true,
+        lastCheckoutAt: true,
       },
     });
 
