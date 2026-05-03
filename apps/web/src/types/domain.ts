@@ -666,6 +666,13 @@ export type ContractDetail = {
   activatedAt: string | null;
   terminatedAt: string | null;
   terminationReason: string | null;
+  checklistOverrideReason: string | null;
+  checklistOverrideApprovedAt: string | null;
+  checklistOverrideApprovedByUser: {
+    id: string;
+    fullName: string;
+    email: string;
+  } | null;
   createdAt: string;
   updatedAt: string;
   property: {
@@ -710,6 +717,28 @@ export type ContractDetail = {
     fullName: string;
     email: string;
   };
+  checklistItems: Array<{
+    id: string;
+    itemType: string;
+    status: string;
+    isRequired: boolean;
+    responsibleUserId: string | null;
+    completedAt: string | null;
+    completedByUserId: string | null;
+    notes: string | null;
+    attachmentFileUrl: string | null;
+    exceptionJustification: string | null;
+    createdAt: string;
+    updatedAt: string;
+    responsibleUser: {
+      id: string;
+      fullName: string;
+    } | null;
+    completedByUser: {
+      id: string;
+      fullName: string;
+    } | null;
+  }>;
   versions: Array<{
     id: string;
     versionNumber: number;

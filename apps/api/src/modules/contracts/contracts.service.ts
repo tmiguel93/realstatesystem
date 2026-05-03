@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import {
   AuditEntityType,
+  ContractChecklistItemStatus,
+  ContractChecklistItemType,
   ContractOriginType,
   ContractStatus,
   ContractVersionStatus,
@@ -10,6 +12,11 @@ import {
   PropertyStatus,
   RentLeadStage,
 } from "@prisma/client";
+import {
+  contractChecklistItemTypeOptions,
+  permissionCodes,
+  roleCodes,
+} from "@imobiliaria/shared";
 import { prisma } from "../../core/prisma";
 import { HttpError } from "../../core/http-error";
 import { buildPaginationMeta, resolvePagination } from "../../core/pagination";
@@ -42,6 +49,20 @@ const DEFAULT_RESPONSIBILITIES = [
   "Comunicar ocorrencias relevantes e necessidades de reparo sem atraso indevido.",
   "Zelar pela conservacao do imovel e devolve-lo conforme as condicoes pactuadas e a vistoria.",
 ] as const;
+
+const REQUIRED_CONTRACT_CHECKLIST_ITEMS = [
+  ContractChecklistItemType.DOCUMENTS,
+  ContractChecklistItemType.BANK_DETAILS,
+  ContractChecklistItemType.GUARANTEE,
+  ContractChecklistItemType.DUE_DAY,
+  ContractChecklistItemType.INSPECTION,
+  ContractChecklistItemType.APPROVAL,
+] as const;
+
+const checklistApprovedStatuses: ContractChecklistItemStatus[] = [
+  ContractChecklistItemStatus.APPROVED,
+  ContractChecklistItemStatus.NOT_APPLICABLE,
+];
 
 const contractListInclude = Prisma.validator<Prisma.ContractDefaultArgs>()({
   include: {
@@ -159,6 +180,42 @@ const contractDetailInclude = Prisma.validator<Prisma.ContractDefaultArgs>()({
         email: true,
       },
     },
+    checklistOverrideApprovedByUser: {
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+      },
+    },
+    checklistItems: {
+      orderBy: { itemType: "asc" },
+      select: {
+        id: true,
+        itemType: true,
+        status: true,
+        isRequired: true,
+        responsibleUserId: true,
+        completedAt: true,
+        completedByUserId: true,
+        notes: true,
+        attachmentFileUrl: true,
+        exceptionJustification: true,
+        createdAt: true,
+        updatedAt: true,
+        responsibleUser: {
+          select: {
+            id: true,
+            fullName: true,
+          },
+        },
+        completedByUser: {
+          select: {
+            id: true,
+            fullName: true,
+          },
+        },
+      },
+    },
     versions: {
       orderBy: { versionNumber: "desc" },
       select: {
@@ -214,6 +271,8 @@ type RequestContext = {
   actorUserId?: string;
   ipAddress?: string;
   userAgent?: string;
+  permissions?: string[];
+  roles?: string[];
 };
 
 type ContractSourceSnapshot = {
@@ -307,6 +366,51 @@ function normalizeResponsibilities(value: string[]) {
   return [...new Set(normalized)];
 }
 
+function getChecklistItemLabel(itemType: ContractChecklistItemType) {
+  return (
+    contractChecklistItemTypeOptions.find((item) => item.value === itemType)
+      ?.label ?? itemType
+  );
+}
+
+function normalizeChecklistItems(items: ContractPayloadInput["checklistItems"]) {
+  const byType = new Map(items.map((item) => [item.itemType, item]));
+
+  return REQUIRED_CONTRACT_CHECKLIST_ITEMS.map((itemType) => {
+    const item = byType.get(itemType);
+
+    return {
+      itemType,
+      status: item?.status ?? ContractChecklistItemStatus.PENDING,
+      isRequired: item?.isRequired ?? true,
+      responsibleUserId: item?.responsibleUserId ?? null,
+      completedAt: item?.completedAt ?? null,
+      notes: normalizeOptionalString(item?.notes),
+      attachmentFileUrl: normalizeOptionalString(item?.attachmentFileUrl),
+    };
+  });
+}
+
+function resolveChecklistBlockers(
+  items: ReturnType<typeof normalizeChecklistItems>,
+) {
+  return items.filter((item) => {
+    if (!item.isRequired) {
+      return false;
+    }
+
+    if (
+      item.itemType === ContractChecklistItemType.DOCUMENTS ||
+      item.itemType === ContractChecklistItemType.DUE_DAY ||
+      item.itemType === ContractChecklistItemType.APPROVAL
+    ) {
+      return item.status !== ContractChecklistItemStatus.APPROVED;
+    }
+
+    return !checklistApprovedStatuses.includes(item.status);
+  });
+}
+
 function mapContractListItem(contract: ContractListRecord) {
   const latestVersion = contract.versions[0] ?? null;
   const daysToEnd = daysUntil(contract.endDate);
@@ -374,6 +478,9 @@ function mapContractDetail(contract: ContractDetailRecord) {
     activatedAt: contract.activatedAt,
     terminatedAt: contract.terminatedAt,
     terminationReason: contract.terminationReason,
+    checklistOverrideReason: contract.checklistOverrideReason,
+    checklistOverrideApprovedAt: contract.checklistOverrideApprovedAt,
+    checklistOverrideApprovedByUser: contract.checklistOverrideApprovedByUser,
     createdAt: contract.createdAt,
     updatedAt: contract.updatedAt,
     property: contract.property,
@@ -381,6 +488,22 @@ function mapContractDetail(contract: ContractDetailRecord) {
     tenant: contract.tenant,
     rentLead: contract.rentLead,
     createdByUser: contract.createdByUser,
+    checklistItems: contract.checklistItems.map((item) => ({
+      id: item.id,
+      itemType: item.itemType,
+      status: item.status,
+      isRequired: item.isRequired,
+      responsibleUserId: item.responsibleUserId,
+      completedAt: item.completedAt,
+      completedByUserId: item.completedByUserId,
+      notes: item.notes,
+      attachmentFileUrl: item.attachmentFileUrl,
+      exceptionJustification: item.exceptionJustification,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+      responsibleUser: item.responsibleUser,
+      completedByUser: item.completedByUser,
+    })),
     versions: contract.versions.map((version) => ({
       id: version.id,
       versionNumber: version.versionNumber,
@@ -474,6 +597,7 @@ export class ContractsService {
 
     const snapshot = await this.resolveSourceSnapshot(payload);
     await this.ensureNoOngoingConflict(snapshot.property.id, snapshot.rentLead?.id ?? null);
+    const checklistReview = this.ensureChecklistAllowsGeneration(payload, context);
 
     const responsibilities = normalizeResponsibilities(payload.responsibilities);
     const contractId = randomUUID();
@@ -509,8 +633,27 @@ export class ContractsService {
             responsibilities,
             additionalClauses: normalizeOptionalString(payload.additionalClauses),
             legalWarningAcknowledgedAt: new Date(),
+            checklistOverrideReason: checklistReview.overrideApproved
+              ? normalizeOptionalString(payload.checklistOverrideReason)
+              : null,
+            checklistOverrideApprovedAt: checklistReview.overrideApproved
+              ? new Date()
+              : null,
+            checklistOverrideApprovedByUserId: checklistReview.overrideApproved
+              ? context.actorUserId!
+              : null,
           },
         });
+
+        await this.replaceChecklistItems(
+          tx,
+          contractId,
+          checklistReview.items,
+          checklistReview.overrideApproved
+            ? normalizeOptionalString(payload.checklistOverrideReason)
+            : null,
+          context.actorUserId!,
+        );
 
         await tx.contractVersion.create({
           data: {
@@ -549,6 +692,7 @@ export class ContractsService {
           rentLeadId: snapshot.rentLead?.id ?? null,
           propertyId: snapshot.property.id,
           tenantId: snapshot.tenant.id,
+          checklistOverride: checklistReview.overrideApproved,
         },
       );
       await this.audit(
@@ -623,6 +767,7 @@ export class ContractsService {
       snapshot.rentLead?.id ?? null,
       existingContract.id,
     );
+    const checklistReview = this.ensureChecklistAllowsGeneration(payload, context);
 
     const responsibilities = normalizeResponsibilities(payload.responsibilities);
 
@@ -666,8 +811,27 @@ export class ContractsService {
             additionalClauses: normalizeOptionalString(payload.additionalClauses),
             legalWarningAcknowledgedAt: new Date(),
             terminationReason: null,
+            checklistOverrideReason: checklistReview.overrideApproved
+              ? normalizeOptionalString(payload.checklistOverrideReason)
+              : null,
+            checklistOverrideApprovedAt: checklistReview.overrideApproved
+              ? new Date()
+              : null,
+            checklistOverrideApprovedByUserId: checklistReview.overrideApproved
+              ? context.actorUserId!
+              : null,
           },
         });
+
+        await this.replaceChecklistItems(
+          tx,
+          contractId,
+          checklistReview.items,
+          checklistReview.overrideApproved
+            ? normalizeOptionalString(payload.checklistOverrideReason)
+            : null,
+          context.actorUserId!,
+        );
 
         await tx.contractVersion.create({
           data: {
@@ -708,6 +872,7 @@ export class ContractsService {
           rentLeadId: snapshot.rentLead?.id ?? null,
           propertyId: snapshot.property.id,
           tenantId: snapshot.tenant.id,
+          checklistOverride: checklistReview.overrideApproved,
         },
       );
       if (latestVersion) {
@@ -1028,6 +1193,93 @@ export class ContractsService {
       buffer,
       fileName: `${version.contract.code.toLowerCase()}-v${version.versionNumber}.pdf`,
     };
+  }
+
+  private ensureChecklistAllowsGeneration(
+    payload: ContractPayloadInput,
+    context: RequestContext,
+  ) {
+    const checklistItems = normalizeChecklistItems(payload.checklistItems);
+    const blockers = resolveChecklistBlockers(checklistItems);
+
+    if (blockers.length === 0) {
+      return {
+        items: checklistItems,
+        overrideApproved: false,
+      };
+    }
+
+    const overrideReason = normalizeOptionalString(payload.checklistOverrideReason);
+
+    if (!overrideReason) {
+      throw new HttpError(
+        409,
+        `Checklist incompleto. Pendencias: ${blockers
+          .map((item) => getChecklistItemLabel(item.itemType))
+          .join(", ")}.`,
+      );
+    }
+
+    if (overrideReason.length < 12) {
+      throw new HttpError(
+        422,
+        "A excecao do checklist exige uma justificativa administrativa clara.",
+      );
+    }
+
+    if (!this.canOverrideChecklist(context)) {
+      throw new HttpError(
+        403,
+        "Somente MASTER ou usuario com revisao de contratos pode justificar excecao de checklist.",
+      );
+    }
+
+    return {
+      items: checklistItems,
+      overrideApproved: true,
+    };
+  }
+
+  private async replaceChecklistItems(
+    tx: Prisma.TransactionClient,
+    contractId: string,
+    items: ReturnType<typeof normalizeChecklistItems>,
+    exceptionJustification: string | null,
+    actorUserId: string,
+  ) {
+    await tx.contractChecklistItem.deleteMany({
+      where: { contractId },
+    });
+
+    const now = new Date();
+
+    await tx.contractChecklistItem.createMany({
+      data: items.map((item) => {
+        const completed =
+          item.status === ContractChecklistItemStatus.APPROVED ||
+          item.status === ContractChecklistItemStatus.NOT_APPLICABLE;
+
+        return {
+          contractId,
+          itemType: item.itemType,
+          status: item.status,
+          isRequired: item.isRequired,
+          responsibleUserId: item.responsibleUserId,
+          completedAt: completed ? item.completedAt ?? now : null,
+          completedByUserId: completed ? actorUserId : null,
+          notes: item.notes,
+          attachmentFileUrl: item.attachmentFileUrl,
+          exceptionJustification,
+        };
+      }),
+    });
+  }
+
+  private canOverrideChecklist(context: RequestContext) {
+    return Boolean(
+      context.roles?.includes(roleCodes.MASTER_ADMIN) ||
+        context.permissions?.includes(permissionCodes.CONTRACTS_REVIEW),
+    );
   }
 
   private async resolveSourceSnapshot(

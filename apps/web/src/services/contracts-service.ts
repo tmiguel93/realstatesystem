@@ -24,6 +24,16 @@ type ContractPayload = {
   penaltyDescription?: string | null;
   responsibilities: string[];
   additionalClauses?: string | null;
+  checklistItems: Array<{
+    itemType: string;
+    status: string;
+    isRequired: boolean;
+    responsibleUserId?: string | null;
+    completedAt?: string | null;
+    notes?: string | null;
+    attachmentFileUrl?: string | null;
+  }>;
+  checklistOverrideReason?: string | null;
   legalWarningAcknowledged: boolean;
 };
 

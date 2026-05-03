@@ -1,5 +1,7 @@
 import {
   AdjustmentIndex,
+  ContractChecklistItemStatus,
+  ContractChecklistItemType,
   ContractOriginType,
   ContractStatus,
   ContractVersionStatus,
@@ -12,6 +14,19 @@ const optionalUuid = z
   .union([z.string().uuid(), z.literal(""), z.null()])
   .optional()
   .transform((value) => (value ? value : null));
+
+const contractChecklistItemSchema = z.object({
+  itemType: z.nativeEnum(ContractChecklistItemType),
+  status: z.nativeEnum(ContractChecklistItemStatus),
+  isRequired: z.boolean().default(true),
+  responsibleUserId: optionalUuid,
+  completedAt: z.coerce.date().optional().nullable(),
+  notes: optionalString,
+  attachmentFileUrl: z
+    .union([z.string().trim().url("Informe uma URL valida."), z.literal(""), z.null()])
+    .optional()
+    .transform((value) => (value ? value : null)),
+});
 
 export const contractsListQuerySchema = z.object({
   page: z.coerce.number().optional(),
@@ -62,6 +77,8 @@ export const contractPayloadSchema = z
     penaltyDescription: optionalString,
     responsibilities: z.array(z.string().trim().min(1)).default([]),
     additionalClauses: optionalString,
+    checklistItems: z.array(contractChecklistItemSchema).default([]),
+    checklistOverrideReason: optionalString,
     legalWarningAcknowledged: z
       .boolean()
       .refine(
@@ -105,6 +122,20 @@ export const contractPayloadSchema = z
           message: "Selecione o locatario da locacao.",
         });
       }
+    }
+
+    const checklistTypes = new Set<ContractChecklistItemType>();
+    for (const item of value.checklistItems) {
+      if (checklistTypes.has(item.itemType)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["checklistItems"],
+          message: "O checklist possui itens duplicados.",
+        });
+        break;
+      }
+
+      checklistTypes.add(item.itemType);
     }
   });
 

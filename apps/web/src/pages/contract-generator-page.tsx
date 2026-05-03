@@ -12,11 +12,12 @@ import { contractsService } from "@/services/contracts-service";
 import { propertiesService } from "@/services/properties-service";
 import { rentsService } from "@/services/rents-service";
 import { tenantsService } from "@/services/tenants-service";
+import { usersService } from "@/services/users-service";
 
 export function ContractGeneratorPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { accessToken } = useAuth();
+  const { accessToken, hasPermission, user } = useAuth();
   const [searchParams] = useSearchParams();
   const contractId = searchParams.get("contractId");
   const mode = contractId ? "version" : "create";
@@ -57,6 +58,12 @@ export function ContractGeneratorPage() {
         page: 1,
         pageSize: 100,
       }),
+    enabled: Boolean(accessToken),
+  });
+
+  const usersQuery = useQuery({
+    queryKey: ["contract-checklist-users"],
+    queryFn: () => usersService.listAssignable(accessToken!),
     enabled: Boolean(accessToken),
   });
 
@@ -108,6 +115,18 @@ export function ContractGeneratorPage() {
     [tenantsQuery.data],
   );
 
+  const responsibleOptions = useMemo(
+    () =>
+      (usersQuery.data ?? []).map((item) => ({
+        value: item.id,
+        label: item.fullName,
+      })),
+    [usersQuery.data],
+  );
+
+  const canOverrideChecklist =
+    hasPermission("contracts.review") || user?.roles.includes("MASTER_ADMIN") || false;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -133,6 +152,9 @@ export function ContractGeneratorPage() {
         rentLeadOptions={rentLeadOptions}
         propertyOptions={propertyOptions}
         tenantOptions={tenantOptions}
+        responsibleOptions={responsibleOptions}
+        currentUserId={user?.id ?? null}
+        canOverrideChecklist={canOverrideChecklist}
         pending={createMutation.isPending || versionMutation.isPending}
         onSubmit={async (payload) => {
           if (mode === "version" && contractId) {

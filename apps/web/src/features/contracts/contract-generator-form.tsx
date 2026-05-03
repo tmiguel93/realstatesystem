@@ -1,11 +1,14 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   adjustmentIndexOptions,
+  contractChecklistItemTypeOptions,
+  contractChecklistStatusOptions,
   contractOriginOptions,
   guaranteeTypeOptions,
+  requiredContractChecklistItemTypes,
 } from "@imobiliaria/shared";
 import { FormInput } from "@/components/form/form-input";
 import { FormSelect } from "@/components/form/form-select";
@@ -20,6 +23,22 @@ const DEFAULT_RESPONSIBILITIES_TEXT = [
   "Comunicar ocorrencias relevantes e necessidades de reparo sem atraso indevido.",
   "Zelar pela conservacao do imovel e devolve-lo conforme as condicoes pactuadas e a vistoria.",
 ].join("\n");
+
+const mandatoryChecklistTypes = new Set<string>([
+  "DOCUMENTS",
+  "DUE_DAY",
+  "APPROVAL",
+]);
+
+const contractChecklistSchema = z.object({
+  itemType: z.string().trim().min(1),
+  status: z.string().trim().min(1),
+  isRequired: z.boolean(),
+  responsibleUserId: z.string().trim().optional(),
+  completedAt: z.string().trim().optional(),
+  notes: z.string().trim().optional(),
+  attachmentFileUrl: z.string().trim().optional(),
+});
 
 const contractGeneratorSchema = z
   .object({
@@ -43,6 +62,8 @@ const contractGeneratorSchema = z
     penaltyDescription: z.string().trim().optional(),
     responsibilitiesText: z.string().trim().optional(),
     additionalClauses: z.string().trim().optional(),
+    checklistItems: z.array(contractChecklistSchema),
+    checklistOverrideReason: z.string().trim().optional(),
     legalWarningAcknowledged: z.boolean(),
   })
   .superRefine((value, context) => {
@@ -145,6 +166,9 @@ type ContractGeneratorFormProps = {
   rentLeadOptions: Array<{ value: string; label: string }>;
   propertyOptions: Array<{ value: string; label: string }>;
   tenantOptions: Array<{ value: string; label: string }>;
+  responsibleOptions: Array<{ value: string; label: string }>;
+  currentUserId?: string | null;
+  canOverrideChecklist?: boolean;
   pending?: boolean;
   onSubmit: (payload: {
     code?: string | null;
@@ -164,6 +188,16 @@ type ContractGeneratorFormProps = {
     penaltyDescription?: string | null;
     responsibilities: string[];
     additionalClauses?: string | null;
+    checklistItems: Array<{
+      itemType: string;
+      status: string;
+      isRequired: boolean;
+      responsibleUserId?: string | null;
+      completedAt?: string | null;
+      notes?: string | null;
+      attachmentFileUrl?: string | null;
+    }>;
+    checklistOverrideReason?: string | null;
     legalWarningAcknowledged: boolean;
   }) => Promise<void>;
 };
@@ -195,7 +229,31 @@ function toIsoDate(value: string) {
   return new Date(`${value}T12:00:00`).toISOString();
 }
 
-function buildDefaults(initialData?: ContractDetail | null): ContractGeneratorFormValues {
+function buildDefaultChecklistItems(
+  initialData?: ContractDetail | null,
+  currentUserId?: string | null,
+) {
+  return requiredContractChecklistItemTypes.map((itemType) => {
+    const existing = initialData?.checklistItems.find(
+      (item) => item.itemType === itemType,
+    );
+
+    return {
+      itemType,
+      status: existing?.status ?? "PENDING",
+      isRequired: existing?.isRequired ?? true,
+      responsibleUserId: existing?.responsibleUserId ?? currentUserId ?? "",
+      completedAt: existing?.completedAt ?? "",
+      notes: existing?.notes ?? "",
+      attachmentFileUrl: existing?.attachmentFileUrl ?? "",
+    };
+  });
+}
+
+function buildDefaults(
+  initialData?: ContractDetail | null,
+  currentUserId?: string | null,
+): ContractGeneratorFormValues {
   return {
     code: initialData?.code ?? "",
     originType: initialData?.originType ?? "RENT_PIPELINE",
@@ -222,6 +280,8 @@ function buildDefaults(initialData?: ContractDetail | null): ContractGeneratorFo
     responsibilitiesText:
       initialData?.responsibilities.join("\n") ?? DEFAULT_RESPONSIBILITIES_TEXT,
     additionalClauses: initialData?.additionalClauses ?? "",
+    checklistItems: buildDefaultChecklistItems(initialData, currentUserId),
+    checklistOverrideReason: "",
     legalWarningAcknowledged: false,
   };
 }
@@ -232,6 +292,9 @@ export function ContractGeneratorForm({
   rentLeadOptions,
   propertyOptions,
   tenantOptions,
+  responsibleOptions,
+  currentUserId,
+  canOverrideChecklist = false,
   pending,
   onSubmit,
 }: ContractGeneratorFormProps) {
@@ -241,19 +304,81 @@ export function ContractGeneratorForm({
     watch,
     handleSubmit,
     reset,
+    setError,
     formState: { errors },
   } = useForm<ContractGeneratorFormValues>({
     resolver: zodResolver(contractGeneratorSchema),
-    defaultValues: buildDefaults(initialData),
+    defaultValues: buildDefaults(initialData, currentUserId),
   });
 
   useEffect(() => {
-    reset(buildDefaults(initialData));
-  }, [initialData, reset]);
+    reset(buildDefaults(initialData, currentUserId));
+  }, [currentUserId, initialData, reset]);
 
   const originType = watch("originType");
+  const checklistItems = watch("checklistItems");
+  const checklistOverrideReason = watch("checklistOverrideReason");
+  const checklistBlockers = useMemo(
+    () =>
+      checklistItems.filter((item) => {
+        if (!item.isRequired) {
+          return false;
+        }
+
+        if (mandatoryChecklistTypes.has(item.itemType)) {
+          return item.status !== "APPROVED";
+        }
+
+        return !["APPROVED", "NOT_APPLICABLE"].includes(item.status);
+      }),
+    [checklistItems],
+  );
+  const checklistProgress = useMemo(() => {
+    if (!checklistItems.length) {
+      return 0;
+    }
+
+    return Math.round(
+      ((checklistItems.length - checklistBlockers.length) / checklistItems.length) *
+        100,
+    );
+  }, [checklistBlockers.length, checklistItems.length]);
 
   const submit = handleSubmit(async (values) => {
+    const blockers = values.checklistItems.filter((item) => {
+      if (!item.isRequired) {
+        return false;
+      }
+
+      if (mandatoryChecklistTypes.has(item.itemType)) {
+        return item.status !== "APPROVED";
+      }
+
+      return !["APPROVED", "NOT_APPLICABLE"].includes(item.status);
+    });
+
+    if (blockers.length && !canOverrideChecklist) {
+      setError("checklistItems", {
+        type: "manual",
+        message: "Conclua o checklist obrigatório antes de gerar a minuta.",
+      });
+      return;
+    }
+
+    if (
+      blockers.length &&
+      canOverrideChecklist &&
+      !values.checklistOverrideReason?.trim()
+    ) {
+      setError("checklistOverrideReason", {
+        type: "manual",
+        message: "Informe a justificativa da exceção.",
+      });
+      return;
+    }
+
+    const now = new Date().toISOString();
+
     await onSubmit({
       code: toNullable(values.code),
       originType: values.originType,
@@ -278,6 +403,23 @@ export function ContractGeneratorForm({
         .map((item) => item.trim())
         .filter(Boolean),
       additionalClauses: toNullable(values.additionalClauses),
+      checklistItems: values.checklistItems.map((item) => {
+        const completed = ["APPROVED", "NOT_APPLICABLE"].includes(item.status);
+
+        return {
+          itemType: item.itemType,
+          status: item.status,
+          isRequired: item.isRequired,
+          responsibleUserId: toNullable(item.responsibleUserId),
+          completedAt: completed ? item.completedAt || now : null,
+          notes: toNullable(item.notes),
+          attachmentFileUrl: toNullable(item.attachmentFileUrl),
+        };
+      }),
+      checklistOverrideReason:
+        blockers.length && canOverrideChecklist
+          ? toNullable(values.checklistOverrideReason)
+          : null,
       legalWarningAcknowledged: values.legalWarningAcknowledged,
     });
   });
@@ -406,6 +548,136 @@ export function ContractGeneratorForm({
 
       <div className="space-y-5">
         <SectionCard
+          title="Checklist obrigatório"
+          description="A geração só avança quando todos os itens obrigatórios estão aprovados ou quando uma exceção autorizada é justificada."
+        >
+          <div className="mb-5 rounded-[24px] border border-brand-100 bg-brand-50/60 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-ink-900">
+                  Progresso do checklist
+                </p>
+                <p className="mt-1 text-xs text-ink-500">
+                  {checklistBlockers.length
+                    ? `${checklistBlockers.length} pendência(s) obrigatória(s)`
+                    : "Pronto para gerar a minuta"}
+                </p>
+              </div>
+              <span className="font-display text-3xl text-ink-950">
+                {checklistProgress}%
+              </span>
+            </div>
+            <div className="mt-4 h-2 rounded-full bg-white">
+              <div
+                className="h-2 rounded-full bg-brand-600 transition-all duration-300"
+                style={{ width: `${checklistProgress}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {checklistItems.map((item, index) => {
+              const option = contractChecklistItemTypeOptions.find(
+                (entry) => entry.value === item.itemType,
+              );
+              const blocked = checklistBlockers.some(
+                (blocker) => blocker.itemType === item.itemType,
+              );
+
+              return (
+                <article
+                  key={item.itemType}
+                  className={`rounded-[24px] border px-4 py-4 transition ${
+                    blocked
+                      ? "border-amber-200 bg-amber-50/70"
+                      : "border-emerald-200 bg-emerald-50/70"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-ink-950">
+                        {option?.label ?? item.itemType}
+                      </p>
+                      <p className="mt-1 text-xs text-ink-500">
+                        {item.isRequired ? "Obrigatório" : "Opcional"}
+                      </p>
+                    </div>
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${
+                        blocked
+                          ? "bg-white text-amber-800"
+                          : "bg-white text-emerald-700"
+                      }`}
+                    >
+                      {blocked ? "Pendente" : "OK"}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 space-y-3">
+                    <input
+                      type="hidden"
+                      {...register(`checklistItems.${index}.itemType`)}
+                    />
+                    <FormSelect
+                      label="Status"
+                      options={contractChecklistStatusOptions.map((status) => ({
+                        value: status.value,
+                        label: status.label,
+                      }))}
+                      {...register(`checklistItems.${index}.status`)}
+                    />
+                    <FormSelect
+                      label="Responsável"
+                      options={[
+                        { value: "", label: "Sem responsável" },
+                        ...responsibleOptions,
+                      ]}
+                      {...register(`checklistItems.${index}.responsibleUserId`)}
+                    />
+                    <FormInput
+                      label="Anexo opcional"
+                      placeholder="URL do documento ou evidência"
+                      {...register(`checklistItems.${index}.attachmentFileUrl`)}
+                    />
+                    <FormTextarea
+                      label="Observação"
+                      placeholder="Contexto curto da conferência."
+                      {...register(`checklistItems.${index}.notes`)}
+                    />
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          {errors.checklistItems?.message ? (
+            <p className="mt-4 text-sm text-rose-600">
+              {errors.checklistItems.message}
+            </p>
+          ) : null}
+
+          {checklistBlockers.length && canOverrideChecklist ? (
+            <div className="mt-5 rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-4">
+              <FormTextarea
+                label="Justificativa de exceção"
+                placeholder="Explique por que a minuta precisa ser gerada mesmo com pendências."
+                error={errors.checklistOverrideReason?.message}
+                {...register("checklistOverrideReason")}
+              />
+              <p className="mt-2 text-xs text-amber-800">
+                A exceção será registrada em auditoria e vinculada ao contrato.
+              </p>
+            </div>
+          ) : null}
+
+          {checklistBlockers.length && !canOverrideChecklist ? (
+            <div className="mt-5 rounded-[24px] border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-800">
+              Você não possui permissão para gerar com exceção. Conclua os itens pendentes ou solicite revisão superior.
+            </div>
+          ) : null}
+        </SectionCard>
+
+        <SectionCard
           title="Aviso obrigatorio"
           description="A minuta e um apoio operacional. O uso final exige validacao juridica antes da assinatura."
         >
@@ -444,7 +716,11 @@ export function ContractGeneratorForm({
         <div className="flex items-center justify-end gap-3">
           <button
             type="submit"
-            disabled={pending}
+            disabled={
+              pending ||
+              (checklistBlockers.length > 0 &&
+                (!canOverrideChecklist || !checklistOverrideReason?.trim()))
+            }
             className="primary-button disabled:opacity-60"
           >
             {pending

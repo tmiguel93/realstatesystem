@@ -208,6 +208,23 @@ enum ContractVersionStatus {
   CANCELLED
 }
 
+enum ContractChecklistItemType {
+  DOCUMENTS
+  BANK_DETAILS
+  GUARANTEE
+  DUE_DAY
+  INSPECTION
+  APPROVAL
+}
+
+enum ContractChecklistItemStatus {
+  PENDING
+  IN_ANALYSIS
+  APPROVED
+  REJECTED
+  NOT_APPLICABLE
+}
+
 enum MaintenanceTicketType {
   STRUCTURAL
   INTERNAL
@@ -354,9 +371,12 @@ model User {
   brokerVisits             Visit[]              @relation("VisitBroker")
   createdVisits            Visit[]              @relation("VisitCreatedBy")
   keyControls              KeyControl[]         @relation("KeyControlResponsibleUser")
-  createdContracts         Contract[]           @relation("ContractCreatedBy")
-  terminatedContracts      Contract[]           @relation("ContractTerminatedBy")
-  createdContractVersions  ContractVersion[]    @relation("ContractVersionCreatedBy")
+    createdContracts         Contract[]           @relation("ContractCreatedBy")
+    terminatedContracts      Contract[]           @relation("ContractTerminatedBy")
+    checklistResponsibleItems ContractChecklistItem[] @relation("ContractChecklistResponsible")
+    checklistCompletedItems  ContractChecklistItem[] @relation("ContractChecklistCompletedBy")
+    checklistExceptionApprovals Contract[]         @relation("ContractChecklistExceptionApprovedBy")
+    createdContractVersions  ContractVersion[]    @relation("ContractVersionCreatedBy")
   reviewedContractVersions ContractVersion[]    @relation("ContractVersionReviewedBy")
   uploadedDocuments        Document[]           @relation("DocumentUploadedBy")
   uploadedPropertyImages   PropertyImage[]      @relation("PropertyImageUploadedBy")
@@ -780,19 +800,24 @@ model Contract {
   terminatedAt              DateTime?
   terminatedByUserId        String?           @db.Uuid
   leaseTerminationRuleId    String?           @db.Uuid
-  terminationReason         String?           @db.Text
-  terminationCalculation    Json?
-  createdAt                 DateTime          @default(now())
+    terminationReason         String?           @db.Text
+    terminationCalculation    Json?
+    checklistOverrideReason   String?           @db.Text
+    checklistOverrideApprovedAt DateTime?
+    checklistOverrideApprovedByUserId String?   @db.Uuid
+    createdAt                 DateTime          @default(now())
   updatedAt                 DateTime          @updatedAt
   rentLead                  RentLead?         @relation("ContractRentLead", fields: [rentLeadId], references: [id], onDelete: SetNull)
   property                  Property          @relation("ContractProperty", fields: [propertyId], references: [id], onDelete: Restrict)
   owner                     Owner             @relation("ContractOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   tenant                    Tenant            @relation("ContractTenant", fields: [tenantId], references: [id], onDelete: Restrict)
   createdByUser             User              @relation("ContractCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
-  terminatedByUser          User?             @relation("ContractTerminatedBy", fields: [terminatedByUserId], references: [id], onDelete: SetNull)
-  leaseTerminationRule      LeaseTerminationRule? @relation("ContractTerminationRule", fields: [leaseTerminationRuleId], references: [id], onDelete: SetNull)
-  versions                  ContractVersion[]
-  leaseTerminationSimulations LeaseTerminationSimulation[]
+    terminatedByUser          User?             @relation("ContractTerminatedBy", fields: [terminatedByUserId], references: [id], onDelete: SetNull)
+    checklistOverrideApprovedByUser User?       @relation("ContractChecklistExceptionApprovedBy", fields: [checklistOverrideApprovedByUserId], references: [id], onDelete: SetNull)
+    leaseTerminationRule      LeaseTerminationRule? @relation("ContractTerminationRule", fields: [leaseTerminationRuleId], references: [id], onDelete: SetNull)
+    versions                  ContractVersion[]
+    checklistItems            ContractChecklistItem[]
+    leaseTerminationSimulations LeaseTerminationSimulation[]
   documents                 Document[]        @relation("DocumentContract")
 
   @@index([status])
@@ -800,11 +825,37 @@ model Contract {
   @@index([ownerId])
   @@index([tenantId])
   @@index([rentLeadId])
-  @@index([endDate, status])
-  @@index([terminatedByUserId])
-}
+    @@index([endDate, status])
+    @@index([terminatedByUserId])
+    @@index([checklistOverrideApprovedByUserId])
+  }
 
-model ContractVersion {
+  model ContractChecklistItem {
+    id                    String                      @id @default(uuid()) @db.Uuid
+    contractId            String                      @db.Uuid
+    itemType              ContractChecklistItemType
+    status                ContractChecklistItemStatus @default(PENDING)
+    isRequired            Boolean                     @default(true)
+    responsibleUserId     String?                     @db.Uuid
+    completedAt           DateTime?
+    completedByUserId     String?                     @db.Uuid
+    notes                 String?                     @db.Text
+    attachmentFileUrl     String?                     @db.VarChar(500)
+    exceptionJustification String?                    @db.Text
+    createdAt             DateTime                    @default(now())
+    updatedAt             DateTime                    @updatedAt
+    contract              Contract                    @relation(fields: [contractId], references: [id], onDelete: Cascade)
+    responsibleUser       User?                       @relation("ContractChecklistResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
+    completedByUser       User?                       @relation("ContractChecklistCompletedBy", fields: [completedByUserId], references: [id], onDelete: SetNull)
+
+    @@unique([contractId, itemType])
+    @@index([contractId, status])
+    @@index([itemType])
+    @@index([responsibleUserId])
+    @@index([completedByUserId])
+  }
+
+  model ContractVersion {
   id                String                @id @default(uuid()) @db.Uuid
   contractId        String                @db.Uuid
   versionNumber     Int

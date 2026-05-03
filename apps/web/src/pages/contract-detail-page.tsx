@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   adjustmentIndexOptions,
   appRoutes,
+  contractChecklistItemTypeOptions,
+  contractChecklistStatusOptions,
   contractOriginOptions,
   contractStatusOptions,
   contractVersionStatusOptions,
@@ -270,6 +272,75 @@ export function ContractDetailPage() {
           </div>
         </SectionCard>
       </div>
+
+      <SectionCard
+        title="Checklist de geração"
+        description="Conferências registradas antes da geração ou versionamento da minuta."
+      >
+        {contract.checklistItems.length ? (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {contract.checklistItems.map((item) => (
+              <article
+                key={item.id}
+                className="rounded-[26px] border border-ink-200 bg-white px-5 py-5 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-ink-950">
+                      {getOptionLabel(contractChecklistItemTypeOptions, item.itemType)}
+                    </p>
+                    <p className="mt-1 text-xs uppercase tracking-[0.16em] text-ink-400">
+                      {item.isRequired ? "Obrigatório" : "Opcional"}
+                    </p>
+                  </div>
+                  <StatusBadge
+                    label={getOptionLabel(contractChecklistStatusOptions, item.status)}
+                    tone={resolveStatusTone(item.status)}
+                  />
+                </div>
+                <div className="mt-4 space-y-2 text-sm text-ink-600">
+                  <p>
+                    Responsável: {item.responsibleUser?.fullName ?? "Não definido"}
+                  </p>
+                  <p>
+                    Concluído por: {item.completedByUser?.fullName ?? "Não concluído"}
+                  </p>
+                  <p>
+                    Data: {item.completedAt ? formatDate(item.completedAt) : "Pendente"}
+                  </p>
+                  {item.notes ? <p>Observação: {item.notes}</p> : null}
+                  {item.attachmentFileUrl ? (
+                    <a
+                      href={item.attachmentFileUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex text-brand-700 transition hover:text-brand-800"
+                    >
+                      Ver anexo
+                    </a>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title="Checklist não registrado"
+            description="Contratos antigos podem não possuir checklist de geração. Novas minutas passam pelo bloqueio obrigatório."
+          />
+        )}
+
+        {contract.checklistOverrideReason ? (
+          <div className="mt-5 rounded-3xl border border-amber-200 bg-amber-50 px-5 py-5 text-sm text-amber-900">
+            Exceção autorizada por{" "}
+            {contract.checklistOverrideApprovedByUser?.fullName ?? "responsável superior"} em{" "}
+            {contract.checklistOverrideApprovedAt
+              ? formatDate(contract.checklistOverrideApprovedAt)
+              : "data não registrada"}
+            : {contract.checklistOverrideReason}
+          </div>
+        ) : null}
+      </SectionCard>
 
       <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
         <SectionCard title="Histórico de versões">

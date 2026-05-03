@@ -248,6 +248,32 @@ export const contractVersionStatusOptions = [
   { value: "CANCELLED", label: "Cancelado" },
 ] as const;
 
+export const contractChecklistItemTypeOptions = [
+  { value: "DOCUMENTS", label: "Documentos" },
+  { value: "BANK_DETAILS", label: "Dados bancários" },
+  { value: "GUARANTEE", label: "Garantia" },
+  { value: "DUE_DAY", label: "Vencimento" },
+  { value: "INSPECTION", label: "Vistoria" },
+  { value: "APPROVAL", label: "Aprovação" },
+] as const;
+
+export const contractChecklistStatusOptions = [
+  { value: "PENDING", label: "Pendente" },
+  { value: "IN_ANALYSIS", label: "Em análise" },
+  { value: "APPROVED", label: "Aprovado" },
+  { value: "REJECTED", label: "Reprovado" },
+  { value: "NOT_APPLICABLE", label: "Não se aplica" },
+] as const;
+
+export const requiredContractChecklistItemTypes = [
+  "DOCUMENTS",
+  "BANK_DETAILS",
+  "GUARANTEE",
+  "DUE_DAY",
+  "INSPECTION",
+  "APPROVAL",
+] as const;
+
 export const adjustmentIndexOptions = [
   { value: "IPCA", label: "IPCA" },
   { value: "IGP_M", label: "IGP-M" },
