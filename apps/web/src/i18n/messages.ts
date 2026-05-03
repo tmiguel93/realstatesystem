@@ -235,6 +235,69 @@ export const messages = {
       evidenceRequiredError:
         "Este tipo de chamado exige ao menos uma foto.",
     },
+    tenantMagicLink: {
+      eyebrow: "Link seguro",
+      title: "Acesso do locatário",
+      description:
+        "Consulte dados básicos do contrato, acompanhe chamados próprios e abra manutenção com fotos.",
+      openTicket: "Abrir chamado",
+      invalidTitle: "Link indisponível",
+      invalidDescription:
+        "Este link pode estar expirado, revogado ou inválido. Solicite um novo acesso à imobiliária.",
+      noCover: "Sem foto de capa",
+      propertyCode: "Código do imóvel",
+      address: "Endereço",
+      secureAccess: "Acesso seguro",
+      secureAccessDescription:
+        "Este link é exclusivo para este contrato e pode ser revogado pela imobiliária.",
+      tenant: "Locatário",
+      linkValidity: "Validade",
+      securityNote:
+        "Não compartilhe este link com terceiros. Ele libera acesso operacional sem senha.",
+      contractTitle: "Contrato vinculado",
+      contractCode: "Contrato",
+      status: "Status",
+      term: "Vigência",
+      rent: "Aluguel",
+      dueDay: "vencimento dia {day}",
+      documentsTitle: "Documentos liberados",
+      documentsDescription:
+        "Arquivos disponibilizados pela imobiliária aparecerão aqui.",
+      noDocumentsTitle: "Nenhum documento liberado",
+      noDocumentsDescription:
+        "No momento, não há segunda via ou documento público liberado para este link.",
+      ticketsTitle: "Chamados próprios",
+      ticketsDescription:
+        "Acompanhe os chamados abertos por este link seguro.",
+      urgency: "Urgência {level}",
+      autoAssessment: "Classificação automática registrada.",
+      noTicketsTitle: "Nenhum chamado aberto",
+      noTicketsDescription:
+        "Quando você abrir um chamado por este link, ele aparecerá aqui.",
+      newTicketTitle: "Novo chamado de manutenção",
+      newTicketDescription:
+        "Descreva o problema e anexe fotos quando houver evidência visual.",
+      ticketFormTitle: "Abertura de chamado",
+      typeLabel: "Tipo do chamado",
+      typePlaceholder: "Selecione o tipo",
+      typeRequired: "Selecione o tipo do chamado.",
+      descriptionLabel: "Descrição detalhada",
+      descriptionPlaceholder:
+        "Explique o problema, o impacto no uso do imóvel e qualquer risco percebido.",
+      descriptionRequired: "Descreva o problema com mais detalhes.",
+      notesLabel: "Observação complementar",
+      notesPlaceholder: "Campo opcional para complementar o atendimento.",
+      ticketScopeNote:
+        "O chamado será vinculado automaticamente ao imóvel deste contrato.",
+      evidenceTitle: "Fotos e evidências",
+      evidenceRequired:
+        "Para este tipo de chamado, ao menos uma foto é obrigatória.",
+      evidenceOptional: "Você pode anexar fotos para ajudar na triagem.",
+      evidenceRequiredError:
+        "Este tipo de chamado exige ao menos uma foto.",
+      selectFiles: "Selecionar arquivos",
+      ticketOpenedSuccess: "Chamado aberto com sucesso.",
+    },
     accessManagement: {
       title: "Perfis e permissões",
       description:
@@ -573,6 +636,67 @@ export const messages = {
       selectFiles: "Select files",
       ticketOpenedSuccess: "Ticket opened successfully in the portal.",
       evidenceRequiredError: "This ticket type requires at least one photo.",
+    },
+    tenantMagicLink: {
+      eyebrow: "Secure link",
+      title: "Tenant access",
+      description:
+        "Review basic contract data, follow your own tickets and open maintenance requests with photos.",
+      openTicket: "Open ticket",
+      invalidTitle: "Link unavailable",
+      invalidDescription:
+        "This link may be expired, revoked or invalid. Ask the real estate office for a new access link.",
+      noCover: "No cover photo",
+      propertyCode: "Property code",
+      address: "Address",
+      secureAccess: "Secure access",
+      secureAccessDescription:
+        "This link is exclusive to this contract and can be revoked by the office.",
+      tenant: "Tenant",
+      linkValidity: "Validity",
+      securityNote:
+        "Do not share this link with third parties. It grants passwordless operational access.",
+      contractTitle: "Linked contract",
+      contractCode: "Contract",
+      status: "Status",
+      term: "Term",
+      rent: "Rent",
+      dueDay: "due day {day}",
+      documentsTitle: "Released documents",
+      documentsDescription: "Files released by the office will appear here.",
+      noDocumentsTitle: "No documents released",
+      noDocumentsDescription:
+        "There is no public copy or document released for this link right now.",
+      ticketsTitle: "Own tickets",
+      ticketsDescription:
+        "Follow maintenance tickets opened through this secure link.",
+      urgency: "Urgency {level}",
+      autoAssessment: "Automatic classification registered.",
+      noTicketsTitle: "No tickets opened",
+      noTicketsDescription:
+        "Tickets opened through this link will appear here.",
+      newTicketTitle: "New maintenance ticket",
+      newTicketDescription:
+        "Describe the issue and attach photos when visual evidence is available.",
+      ticketFormTitle: "Ticket opening",
+      typeLabel: "Ticket type",
+      typePlaceholder: "Select type",
+      typeRequired: "Select the ticket type.",
+      descriptionLabel: "Detailed description",
+      descriptionPlaceholder:
+        "Explain the issue, the impact on property use and any perceived risk.",
+      descriptionRequired: "Describe the issue with more detail.",
+      notesLabel: "Additional note",
+      notesPlaceholder: "Optional field to add context for service.",
+      ticketScopeNote:
+        "The ticket will be automatically linked to this contract property.",
+      evidenceTitle: "Photos and evidence",
+      evidenceRequired: "This ticket type requires at least one photo.",
+      evidenceOptional: "You may attach photos to help triage.",
+      evidenceRequiredError:
+        "This ticket type requires at least one photo.",
+      selectFiles: "Select files",
+      ticketOpenedSuccess: "Ticket opened successfully.",
     },
     accessManagement: {
       title: "Roles and permissions",
@@ -920,6 +1044,69 @@ export const messages = {
       ticketOpenedSuccess: "Ticket abierto correctamente en el portal.",
       evidenceRequiredError:
         "Este tipo de ticket exige al menos una foto.",
+    },
+    tenantMagicLink: {
+      eyebrow: "Link seguro",
+      title: "Acceso del inquilino",
+      description:
+        "Consulta datos básicos del contrato, acompaña tus tickets y abre solicitudes de mantenimiento con fotos.",
+      openTicket: "Abrir ticket",
+      invalidTitle: "Link no disponible",
+      invalidDescription:
+        "Este link puede estar vencido, revocado o inválido. Solicita un nuevo acceso a la inmobiliaria.",
+      noCover: "Sin foto de portada",
+      propertyCode: "Código del inmueble",
+      address: "Dirección",
+      secureAccess: "Acceso seguro",
+      secureAccessDescription:
+        "Este link es exclusivo para este contrato y puede ser revocado por la inmobiliaria.",
+      tenant: "Inquilino",
+      linkValidity: "Validez",
+      securityNote:
+        "No compartas este link con terceros. Libera acceso operativo sin contraseña.",
+      contractTitle: "Contrato vinculado",
+      contractCode: "Contrato",
+      status: "Estado",
+      term: "Vigencia",
+      rent: "Alquiler",
+      dueDay: "vencimiento día {day}",
+      documentsTitle: "Documentos liberados",
+      documentsDescription:
+        "Los archivos liberados por la inmobiliaria aparecerán aquí.",
+      noDocumentsTitle: "Ningún documento liberado",
+      noDocumentsDescription:
+        "Por ahora no hay segunda vía o documento público liberado para este link.",
+      ticketsTitle: "Tickets propios",
+      ticketsDescription:
+        "Acompaña los tickets abiertos por este link seguro.",
+      urgency: "Urgencia {level}",
+      autoAssessment: "Clasificación automática registrada.",
+      noTicketsTitle: "Ningún ticket abierto",
+      noTicketsDescription:
+        "Cuando abras un ticket por este link, aparecerá aquí.",
+      newTicketTitle: "Nuevo ticket de mantenimiento",
+      newTicketDescription:
+        "Describe el problema y adjunta fotos cuando exista evidencia visual.",
+      ticketFormTitle: "Apertura de ticket",
+      typeLabel: "Tipo de ticket",
+      typePlaceholder: "Selecciona el tipo",
+      typeRequired: "Selecciona el tipo de ticket.",
+      descriptionLabel: "Descripción detallada",
+      descriptionPlaceholder:
+        "Explica el problema, el impacto en el uso del inmueble y cualquier riesgo percibido.",
+      descriptionRequired: "Describe el problema con más detalles.",
+      notesLabel: "Observación complementaria",
+      notesPlaceholder: "Campo opcional para complementar el servicio.",
+      ticketScopeNote:
+        "El ticket se vinculará automáticamente al inmueble de este contrato.",
+      evidenceTitle: "Fotos y evidencias",
+      evidenceRequired:
+        "Para este tipo de ticket, al menos una foto es obligatoria.",
+      evidenceOptional: "Puedes adjuntar fotos para ayudar en la clasificación.",
+      evidenceRequiredError:
+        "Este tipo de ticket exige al menos una foto.",
+      selectFiles: "Seleccionar archivos",
+      ticketOpenedSuccess: "Ticket abierto correctamente.",
     },
     accessManagement: {
       title: "Perfiles y permisos",

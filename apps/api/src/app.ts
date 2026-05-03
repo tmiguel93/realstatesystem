@@ -19,6 +19,7 @@ import { rentLeadsRouter } from "./modules/rent-leads/rent-leads.routes";
 import { saleLeadsRouter } from "./modules/sale-leads/sale-leads.routes";
 import { systemRouter } from "./modules/system/system.routes";
 import { tenantsRouter } from "./modules/tenants/tenants.routes";
+import { tenantMagicLinkPublicRouter } from "./modules/tenant-portal/tenant-magic-link.routes";
 import { tenantPortalRouter } from "./modules/tenant-portal/tenant-portal.routes";
 import { rolesRouter, usersRouter } from "./modules/users/users.routes";
 import { visitsRouter } from "./modules/visits/visits.routes";
@@ -66,6 +67,7 @@ export function createApp() {
   app.use("/api/contracts", contractsRouter);
   app.use("/api/users", usersRouter);
   app.use("/api/roles", rolesRouter);
+  app.use("/api/tenant-magic-links", tenantMagicLinkPublicRouter);
   app.use("/api/tenant-portal", tenantPortalRouter);
 
   app.use(notFoundHandler);

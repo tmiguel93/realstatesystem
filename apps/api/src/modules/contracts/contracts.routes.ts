@@ -31,6 +31,21 @@ contractsRouter.get(
   requirePermissions([permissionCodes.CONTRACTS_READ]),
   asyncHandler(controller.getById.bind(controller)),
 );
+contractsRouter.get(
+  "/:id/tenant-magic-link",
+  requirePermissions([permissionCodes.CONTRACTS_READ]),
+  asyncHandler(controller.getTenantMagicLink.bind(controller)),
+);
+contractsRouter.post(
+  "/:id/tenant-magic-link",
+  requirePermissions([permissionCodes.CONTRACTS_GENERATE]),
+  asyncHandler(controller.generateTenantMagicLink.bind(controller)),
+);
+contractsRouter.post(
+  "/:id/tenant-magic-link/revoke",
+  requirePermissions([permissionCodes.CONTRACTS_GENERATE]),
+  asyncHandler(controller.revokeTenantMagicLink.bind(controller)),
+);
 contractsRouter.post(
   "/",
   requirePermissions([permissionCodes.CONTRACTS_GENERATE]),

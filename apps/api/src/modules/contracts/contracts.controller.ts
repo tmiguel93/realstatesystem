@@ -13,9 +13,11 @@ import {
 import { ContractsService } from "./contracts.service";
 import { getRequestContext } from "../../shared/http/request-context";
 import { ContractTerminationService } from "./contracts-termination.service";
+import { TenantMagicLinkController } from "../tenant-portal/tenant-magic-link.controller";
 
 const contractsService = new ContractsService();
 const contractTerminationService = new ContractTerminationService();
+const tenantMagicLinkController = new TenantMagicLinkController();
 
 export class ContractsController {
   async list(request: Request, response: Response) {
@@ -28,6 +30,18 @@ export class ContractsController {
     const params = contractIdParamSchema.parse(request.params);
     const result = await contractsService.getById(params.id);
     return response.status(200).json(result);
+  }
+
+  async getTenantMagicLink(request: Request, response: Response) {
+    return tenantMagicLinkController.getForContract(request, response);
+  }
+
+  async generateTenantMagicLink(request: Request, response: Response) {
+    return tenantMagicLinkController.generateForContract(request, response);
+  }
+
+  async revokeTenantMagicLink(request: Request, response: Response) {
+    return tenantMagicLinkController.revokeForContract(request, response);
   }
 
   async create(request: Request, response: Response) {

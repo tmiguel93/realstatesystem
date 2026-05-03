@@ -767,6 +767,35 @@ export type ContractDetail = {
   };
 };
 
+export type TenantMagicLinkManagement = {
+  contract: {
+    id: string;
+    code: string;
+    status: string;
+    tenant: {
+      id: string;
+      fullName: string;
+      email: string | null;
+    };
+  };
+  link: {
+    id: string;
+    status: string;
+    publicUrl: string | null;
+    tokenPreview: string;
+    expiresAt: string;
+    revokedAt: string | null;
+    lastAccessedAt: string | null;
+    lastAccessIpAddress: string | null;
+    createdAt: string;
+    createdByUser: {
+      id: string;
+      fullName: string;
+      email: string;
+    };
+  } | null;
+};
+
 export type MaintenanceTicketListItem = {
   id: string;
   ticketId: string;
@@ -993,6 +1022,60 @@ export type TenantPortalOverview = {
       addressSummary: string;
       coverImageUrl: string | null;
     };
+  }>;
+  recentTickets: Array<{
+    id: string;
+    ticketId: string;
+    title: string;
+    status: string;
+    urgencyLevel: number;
+    severityJustification: string | null;
+    createdAt: string;
+    updatedAt: string;
+    propertyCodeSnapshot: string;
+    propertyTitleSnapshot: string;
+  }>;
+};
+
+export type TenantMagicLinkOverview = {
+  link: {
+    id: string;
+    status: string;
+    expiresAt: string;
+    lastAccessedAt: string | null;
+  };
+  tenant: {
+    id: string;
+    fullName: string;
+    document: string;
+    email: string | null;
+  };
+  contract: {
+    id: string;
+    code: string;
+    status: string;
+    startDate: string;
+    endDate: string;
+    rentAmount: number;
+    dueDay: number;
+    owner: {
+      fullName: string;
+      email: string | null;
+      phone: string | null;
+    };
+  };
+  property: {
+    id: string;
+    code: string;
+    title: string;
+    addressSummary: string;
+    coverImageUrl: string | null;
+  };
+  documents: Array<{
+    id: string;
+    name: string;
+    fileUrl: string;
+    createdAt: string;
   }>;
   recentTickets: Array<{
     id: string;

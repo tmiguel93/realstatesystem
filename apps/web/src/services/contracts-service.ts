@@ -4,6 +4,7 @@ import type {
   LeaseTerminationRule,
   LeaseTerminationSimulation,
   PaginatedContracts,
+  TenantMagicLinkManagement,
 } from "@/types/domain";
 
 type ContractPayload = {
@@ -78,6 +79,36 @@ export const contractsService = {
       authHeader(accessToken),
     );
     return data;
+  },
+
+  async getTenantMagicLink(accessToken: string, contractId: string) {
+    const { data } = await api.get<TenantMagicLinkManagement>(
+      `/contracts/${contractId}/tenant-magic-link`,
+      authHeader(accessToken),
+    );
+    return data;
+  },
+
+  async generateTenantMagicLink(
+    accessToken: string,
+    contractId: string,
+    payload: { expiresInDays: number },
+  ) {
+    const { data } = await api.post<TenantMagicLinkManagement>(
+      `/contracts/${contractId}/tenant-magic-link`,
+      payload,
+      authHeader(accessToken),
+    );
+    return data;
+  },
+
+  async revokeTenantMagicLink(accessToken: string, contractId: string) {
+    const { data } = await api.post(
+      `/contracts/${contractId}/tenant-magic-link/revoke`,
+      {},
+      authHeader(accessToken),
+    );
+    return data as { revoked: boolean; revokedAt: string };
   },
 
   async create(accessToken: string, payload: ContractPayload) {

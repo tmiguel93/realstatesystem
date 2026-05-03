@@ -280,6 +280,12 @@ enum TenantPortalAccessStatus {
   PENDING
 }
 
+enum TenantMagicLinkStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
 enum MaintenanceTicketHistoryActionType {
   OPENED
   TRIAGED
@@ -300,6 +306,7 @@ enum AuditEntityType {
   ROLE
   PERMISSION
   TENANT_PORTAL_ACCESS
+  TENANT_MAGIC_LINK
   CONTACT
   OWNER
   TENANT
@@ -386,6 +393,8 @@ model User {
   maintenanceTicketHistoryEntries MaintenanceTicketHistory[] @relation("MaintenanceTicketHistoryUser")
   maintenanceSeverityAssessments MaintenanceSeverityAssessment[] @relation("MaintenanceSeverityEvaluatedBy")
   tenantPortalAccesses     TenantPortalAccess[]
+  createdTenantMagicLinks  TenantMagicLink[]    @relation("TenantMagicLinkCreatedBy")
+  revokedTenantMagicLinks  TenantMagicLink[]    @relation("TenantMagicLinkRevokedBy")
   createdLeaseTerminationSimulations LeaseTerminationSimulation[] @relation("LeaseTerminationSimulationCreatedBy")
   confirmedLeaseTerminationSimulations LeaseTerminationSimulation[] @relation("LeaseTerminationSimulationConfirmedBy")
   notifications            Notification[]
@@ -564,6 +573,7 @@ model Tenant {
   contracts          Contract[]   @relation("ContractTenant")
   maintenanceTickets MaintenanceTicket[]
   portalAccesses     TenantPortalAccess[]
+  magicLinks         TenantMagicLink[]
   documents          Document[]   @relation("DocumentTenant")
 
   @@index([contactId])
@@ -818,6 +828,7 @@ model Contract {
     versions                  ContractVersion[]
     checklistItems            ContractChecklistItem[]
     leaseTerminationSimulations LeaseTerminationSimulation[]
+    tenantMagicLinks          TenantMagicLink[]
   documents                 Document[]        @relation("DocumentContract")
 
   @@index([status])
@@ -884,6 +895,7 @@ model MaintenanceTicket {
   ticketId           String                    @unique @db.VarChar(40)
   propertyId         String                    @db.Uuid
   tenantId           String?                   @db.Uuid
+  tenantMagicLinkId  String?                   @db.Uuid
   openedByUserId     String                    @db.Uuid
   assignedToUserId   String?                   @db.Uuid
   title              String                    @db.VarChar(180)
@@ -915,6 +927,7 @@ model MaintenanceTicket {
   openedViaTenantPortal Boolean                @default(false)
   property           Property                  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
   tenant             Tenant?                   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  tenantMagicLink    TenantMagicLink?          @relation(fields: [tenantMagicLinkId], references: [id], onDelete: SetNull)
     openedByUser       User                      @relation("MaintenanceTicketOpenedBy", fields: [openedByUserId], references: [id], onDelete: Restrict)
     assignedToUser     User?                     @relation("MaintenanceTicketAssignedTo", fields: [assignedToUserId], references: [id], onDelete: SetNull)
     triagedByUser      User?                     @relation("MaintenanceTicketTriagedBy", fields: [triagedByUserId], references: [id], onDelete: SetNull)
@@ -925,6 +938,7 @@ model MaintenanceTicket {
   @@index([ticketId])
   @@index([propertyId])
   @@index([tenantId])
+  @@index([tenantMagicLinkId])
   @@index([openedByUserId])
     @@index([assignedToUserId])
     @@index([triagedByUserId])
@@ -1052,6 +1066,36 @@ model TenantPortalAccess {
 
   @@unique([tenantId, userId])
   @@index([status])
+}
+
+model TenantMagicLink {
+  id                  String                @id @default(uuid()) @db.Uuid
+  contractId          String                @db.Uuid
+  tenantId            String                @db.Uuid
+  tokenHash           String                @unique @db.VarChar(96)
+  tokenCiphertext     String                @db.Text
+  tokenPreview        String                @db.VarChar(24)
+  status              TenantMagicLinkStatus @default(ACTIVE)
+  expiresAt           DateTime
+  revokedAt           DateTime?
+  lastAccessedAt      DateTime?
+  lastAccessIpAddress String?               @db.VarChar(64)
+  lastAccessUserAgent String?               @db.VarChar(255)
+  createdByUserId     String                @db.Uuid
+  revokedByUserId     String?               @db.Uuid
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  contract            Contract              @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  tenant              Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdByUser       User                  @relation("TenantMagicLinkCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  revokedByUser       User?                 @relation("TenantMagicLinkRevokedBy", fields: [revokedByUserId], references: [id], onDelete: SetNull)
+  maintenanceTickets  MaintenanceTicket[]
+
+  @@index([contractId, status])
+  @@index([tenantId, status])
+  @@index([expiresAt])
+  @@index([createdByUserId])
+  @@index([revokedByUserId])
 }
 
 model LeaseTerminationRule {

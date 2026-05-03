@@ -33,6 +33,8 @@ import { SaleLeadDetailPage } from "@/pages/sale-lead-detail-page";
 import { SalesPage } from "@/pages/sales-page";
 import { SettingsPage } from "@/pages/settings-page";
 import { TenantDetailPage } from "@/pages/tenant-detail-page";
+import { TenantMagicLinkPage } from "@/pages/tenant-magic-link-page";
+import { TenantMagicLinkTicketNewPage } from "@/pages/tenant-magic-link-ticket-new-page";
 import { TenantPortalPage } from "@/pages/tenant-portal-page";
 import { TenantPortalTicketNewPage } from "@/pages/tenant-portal-ticket-new-page";
 import { TenantsPage } from "@/pages/tenants-page";
@@ -69,6 +71,14 @@ const router = createBrowserRouter([
   {
     path: appRoutes.forbidden,
     element: <ForbiddenPage />,
+  },
+  {
+    path: appRoutes.tenantMagicLink,
+    element: <TenantMagicLinkPage />,
+  },
+  {
+    path: appRoutes.tenantMagicLinkTicketNew,
+    element: <TenantMagicLinkTicketNewPage />,
   },
   {
     element: <ProtectedRoute />,

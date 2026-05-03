@@ -70,6 +70,7 @@ type AttachmentInput = {
 type MaintenanceCreatePayload = {
   propertyId: string;
   tenantId?: string | null;
+  tenantMagicLinkId?: string | null;
   title: string;
   description: string;
   type: MaintenanceTicketType;
@@ -676,6 +677,7 @@ export class MaintenanceService {
             ticketId,
             propertyId: propertyContext.property.id,
             tenantId,
+            tenantMagicLinkId: payload.tenantMagicLinkId ?? null,
             openedByUserId: context.actorUserId!,
             assignedToUserId,
             title: payload.title.trim(),

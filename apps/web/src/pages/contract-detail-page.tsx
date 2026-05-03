@@ -19,7 +19,12 @@ import { SectionCard } from "@/components/feedback/section-card";
 import { StatusBadge } from "@/components/feedback/status-badge";
 import { useAuth } from "@/features/auth/auth-context";
 import { ContractStatusDrawer } from "@/features/contracts/contract-status-drawer";
-import { buildDetailPath, formatCurrency, formatDate } from "@/lib/format";
+import {
+  buildDetailPath,
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+} from "@/lib/format";
 import { getOptionLabel } from "@/lib/options";
 import { resolveStatusTone } from "@/lib/status";
 import { contractsService } from "@/services/contracts-service";
@@ -42,6 +47,12 @@ export function ContractDetailPage() {
   const contractQuery = useQuery({
     queryKey: ["contract-detail", contractId],
     queryFn: () => contractsService.getById(accessToken!, contractId),
+    enabled: Boolean(accessToken && contractId),
+  });
+
+  const magicLinkQuery = useQuery({
+    queryKey: ["tenant-magic-link", contractId],
+    queryFn: () => contractsService.getTenantMagicLink(accessToken!, contractId),
     enabled: Boolean(accessToken && contractId),
   });
 
@@ -77,6 +88,29 @@ export function ContractDetailPage() {
     },
   });
 
+  const generateMagicLinkMutation = useMutation({
+    mutationFn: () =>
+      contractsService.generateTenantMagicLink(accessToken!, contractId, {
+        expiresInDays: 30,
+      }),
+    onSuccess: async () => {
+      toast.success("Link seguro gerado com sucesso.");
+      await queryClient.invalidateQueries({
+        queryKey: ["tenant-magic-link", contractId],
+      });
+    },
+  });
+
+  const revokeMagicLinkMutation = useMutation({
+    mutationFn: () => contractsService.revokeTenantMagicLink(accessToken!, contractId),
+    onSuccess: async () => {
+      toast.success("Link seguro revogado.");
+      await queryClient.invalidateQueries({
+        queryKey: ["tenant-magic-link", contractId],
+      });
+    },
+  });
+
   const contract = contractQuery.data;
 
   const latestVersion = contract?.versions[0] ?? null;
@@ -96,6 +130,23 @@ export function ContractDetailPage() {
     ? hasPermission(permissionCodes.LEASE_TERMINATION_SIMULATE) &&
       ["ACTIVE", "RENEWED", "PENDING_SIGNATURE"].includes(contract.status)
     : false;
+
+  const canManageTenantMagicLink = contract
+    ? hasPermission(permissionCodes.CONTRACTS_GENERATE) &&
+      ["ACTIVE", "RENEWED"].includes(contract.status)
+    : false;
+
+  const tenantMagicLink = magicLinkQuery.data?.link ?? null;
+
+  const copyTenantMagicLink = async () => {
+    if (!tenantMagicLink?.publicUrl) {
+      toast.error("Gere um novo link para copiar o acesso seguro.");
+      return;
+    }
+
+    await navigator.clipboard.writeText(tenantMagicLink.publicUrl);
+    toast.success("Link copiado para a área de transferência.");
+  };
 
   const versionMetrics = useMemo(
     () => ({
@@ -272,6 +323,96 @@ export function ContractDetailPage() {
           </div>
         </SectionCard>
       </div>
+
+      <SectionCard
+        title="Link seguro do locatário"
+        description="Acesso sem senha, restrito a este contrato, com expiração e revogação."
+      >
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="space-y-4">
+            {tenantMagicLink ? (
+              <div className="rounded-[26px] border border-brand-200 bg-brand-50/60 px-5 py-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-ink-950">
+                      Link ativo para {contract.tenant.fullName}
+                    </p>
+                    <p className="mt-1 text-sm text-ink-600">
+                      Válido até {formatDateTime(tenantMagicLink.expiresAt)} · token{" "}
+                      {tenantMagicLink.tokenPreview}
+                    </p>
+                  </div>
+                  <StatusBadge
+                    label={tenantMagicLink.status === "ACTIVE" ? "Ativo" : "Inativo"}
+                    tone={tenantMagicLink.status === "ACTIVE" ? "success" : "neutral"}
+                  />
+                </div>
+                <div className="mt-4 rounded-2xl border border-white/70 bg-white/70 px-4 py-3 text-sm text-ink-700">
+                  {tenantMagicLink.publicUrl ??
+                    "Link protegido. Gere um novo acesso para copiar novamente."}
+                </div>
+                <div className="mt-4 grid gap-2 text-xs uppercase tracking-[0.14em] text-ink-500 md:grid-cols-2">
+                  <p>
+                    Último acesso:{" "}
+                    {tenantMagicLink.lastAccessedAt
+                      ? formatDateTime(tenantMagicLink.lastAccessedAt)
+                      : "sem acesso"}
+                  </p>
+                  <p>Criado por: {tenantMagicLink.createdByUser.fullName}</p>
+                </div>
+              </div>
+            ) : (
+              <EmptyState
+                title="Nenhum link ativo"
+                description="Gere um link seguro para o locatário acessar este contrato, abrir chamados e acompanhar os chamados próprios."
+              />
+            )}
+          </div>
+
+          <div className="rounded-[26px] border border-ink-200 bg-[var(--elevated-bg)] px-5 py-5">
+            <p className="font-semibold text-ink-950">Ações rápidas</p>
+            <p className="mt-2 text-sm text-ink-500">
+              O link não expõe outros contratos e pode ser revogado a qualquer momento.
+            </p>
+            <div className="mt-5 flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={copyTenantMagicLink}
+                disabled={!tenantMagicLink?.publicUrl}
+                className="secondary-button justify-center disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Copiar link
+              </button>
+              {canManageTenantMagicLink ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => generateMagicLinkMutation.mutate()}
+                    disabled={generateMagicLinkMutation.isPending}
+                    className="primary-button justify-center disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {tenantMagicLink ? "Gerar novo link" : "Gerar link"}
+                  </button>
+                  {tenantMagicLink ? (
+                    <button
+                      type="button"
+                      onClick={() => revokeMagicLinkMutation.mutate()}
+                      disabled={revokeMagicLinkMutation.isPending}
+                      className="secondary-button justify-center border-red-200 text-red-700 hover:border-red-300 hover:text-red-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Revogar link
+                    </button>
+                  ) : null}
+                </>
+              ) : (
+                <p className="rounded-2xl bg-ink-100 px-4 py-3 text-sm text-ink-500">
+                  Apenas usuários com permissão para gerar contratos podem administrar este link.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </SectionCard>
 
       <SectionCard
         title="Checklist de geração"

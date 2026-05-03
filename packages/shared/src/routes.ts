@@ -15,6 +15,8 @@ export const appRoutes = {
   maintenanceKanban: "/manutencao/kanban",
   tenantPortal: "/portal/locatario",
   tenantPortalTicketNew: "/portal/locatario/chamados/novo",
+  tenantMagicLink: "/portal/locatario/link/:token",
+  tenantMagicLinkTicketNew: "/portal/locatario/link/:token/chamados/novo",
   contracts: "/contratos",
   contractDetail: "/contratos/:contractId",
   contractGenerator: "/contratos/gerador",
