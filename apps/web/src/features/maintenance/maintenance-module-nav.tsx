@@ -1,8 +1,13 @@
 import { NavLink } from "react-router-dom";
-import { appRoutes } from "@imobiliaria/shared";
+import { appRoutes, permissionCodes } from "@imobiliaria/shared";
+import { useAuth } from "@/features/auth/auth-context";
 import { cn } from "@/lib/cn";
 
-const items = [
+const items: Array<{
+  label: string;
+  to: string;
+  permission?: string;
+}> = [
   {
     label: "Dashboard",
     to: appRoutes.maintenanceDashboard,
@@ -18,13 +23,19 @@ const items = [
   {
     label: "Abrir chamado",
     to: appRoutes.maintenanceTicketNew,
+    permission: permissionCodes.MAINTENANCE_WRITE,
   },
 ];
 
 export function MaintenanceModuleNav() {
+  const { hasPermission } = useAuth();
+  const visibleItems = items.filter(
+    (item) => !item.permission || hasPermission(item.permission),
+  );
+
   return (
     <div className="flex flex-wrap gap-2">
-      {items.map((item) => (
+      {visibleItems.map((item) => (
         <NavLink key={item.to} to={item.to}>
           {({ isActive }) => (
             <span

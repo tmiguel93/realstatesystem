@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
   appRoutes,
+  permissionCodes,
   propertyPurposeOptions,
   propertyStatusOptions,
 } from "@imobiliaria/shared";
@@ -25,7 +26,8 @@ import type { PropertyListItem } from "@/types/domain";
 export function PropertiesPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { accessToken } = useAuth();
+  const { accessToken, hasPermission } = useAuth();
+  const canWriteProperties = hasPermission(permissionCodes.PROPERTIES_WRITE);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [purposeFilter, setPurposeFilter] = useState("");
@@ -57,7 +59,7 @@ export function PropertiesPage() {
         purpose: purposeFilter || undefined,
         withoutImages: withoutImagesOnly || undefined,
       }),
-    enabled: Boolean(accessToken),
+    enabled: Boolean(accessToken && canWriteProperties),
   });
 
   const ownersQuery = useQuery({
@@ -125,7 +127,8 @@ export function PropertiesPage() {
         title="Imóveis"
         description="Controle disponibilidade, finalidade, proprietário, valores e atributos de cada ativo comercial."
         actions={
-          <button
+          canWriteProperties ? (
+            <button
             type="button"
             onClick={() => {
               setSelectedProperty(null);
@@ -134,7 +137,8 @@ export function PropertiesPage() {
             className="secondary-button"
           >
             Novo imóvel
-          </button>
+            </button>
+          ) : null
         }
       />
 
@@ -294,16 +298,18 @@ export function PropertiesPage() {
                           >
                             Abrir detalhe
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedProperty(property);
-                              setDrawerOpen(true);
-                            }}
-                            className="primary-button px-3 py-2"
-                          >
-                            Editar
-                          </button>
+                          {canWriteProperties ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedProperty(property);
+                                setDrawerOpen(true);
+                              }}
+                              className="primary-button px-3 py-2"
+                            >
+                              Editar
+                            </button>
+                          ) : null}
                         </div>
                       </td>
                     </tr>
@@ -331,7 +337,7 @@ export function PropertiesPage() {
                 : "Cadastre um ativo para organizar o portfólio comercial da imobiliária."
             }
             action={
-              withoutImagesOnly ? undefined : (
+              !withoutImagesOnly && canWriteProperties ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -342,7 +348,7 @@ export function PropertiesPage() {
                 >
                   Cadastrar imóvel
                 </button>
-              )
+              ) : null
             }
           />
         )}

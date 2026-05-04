@@ -10,7 +10,7 @@ import {
   Search,
   SunMedium,
 } from "lucide-react";
-import { appRoutes } from "@imobiliaria/shared";
+import { appRoutes, roleLabels } from "@imobiliaria/shared";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/auth-context";
@@ -220,7 +220,9 @@ export function Topbar() {
           <div className="hidden sm:block">
             <p className="text-sm font-semibold text-ink-900">{user?.fullName}</p>
             <p className="text-[11px] uppercase tracking-[0.22em] text-ink-400">
-              {user?.roles.join(" / ")}
+              {user?.roles
+                .map((role) => roleLabels[role as keyof typeof roleLabels] ?? role)
+                .join(" / ")}
             </p>
           </div>
 

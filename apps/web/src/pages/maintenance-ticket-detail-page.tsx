@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { appRoutes } from "@imobiliaria/shared";
+import { appRoutes, permissionCodes } from "@imobiliaria/shared";
 import {
   Building2,
   CheckCircle2,
@@ -50,7 +50,8 @@ function renderHistoryValue(value: unknown) {
 export function MaintenanceTicketDetailPage() {
   const { ticketId = "" } = useParams();
   const queryClient = useQueryClient();
-  const { accessToken } = useAuth();
+  const { accessToken, hasPermission } = useAuth();
+  const canWriteMaintenance = hasPermission(permissionCodes.MAINTENANCE_WRITE);
 
   const detailQuery = useQuery({
     queryKey: ["maintenance-ticket-detail", ticketId],
@@ -61,7 +62,7 @@ export function MaintenanceTicketDetailPage() {
   const usersQuery = useQuery({
     queryKey: ["maintenance-detail-assignable-users"],
     queryFn: () => usersService.listAssignable(accessToken!),
-    enabled: Boolean(accessToken),
+    enabled: Boolean(accessToken && canWriteMaintenance),
   });
 
   const statusMutation = useMutation({
@@ -441,20 +442,22 @@ export function MaintenanceTicketDetailPage() {
         </div>
 
         <div className="space-y-5">
-          <MaintenanceStatusPanel
-            currentStatus={ticket.status}
-            currentAssignedToUserId={ticket.assignedToUser?.id}
-            currentTriageDecision={ticket.triageDecision}
-            responsibleOptions={responsibleOptions}
-            pending={statusMutation.isPending}
-            triagePending={triageMutation.isPending}
-            onSubmit={async (payload) => {
-              await statusMutation.mutateAsync(payload);
-            }}
-            onTriage={async (payload) => {
-              await triageMutation.mutateAsync(payload);
-            }}
-          />
+          {canWriteMaintenance ? (
+            <MaintenanceStatusPanel
+              currentStatus={ticket.status}
+              currentAssignedToUserId={ticket.assignedToUser?.id}
+              currentTriageDecision={ticket.triageDecision}
+              responsibleOptions={responsibleOptions}
+              pending={statusMutation.isPending}
+              triagePending={triageMutation.isPending}
+              onSubmit={async (payload) => {
+                await statusMutation.mutateAsync(payload);
+              }}
+              onTriage={async (payload) => {
+                await triageMutation.mutateAsync(payload);
+              }}
+            />
+          ) : null}
 
           <SectionCard
             title="Linha do tempo do ticket"

@@ -1,8 +1,12 @@
 import { motion } from "framer-motion";
 import { NavLink } from "react-router-dom";
-import { appRoutes, permissionCodes } from "@imobiliaria/shared";
 import {
-  Building2,
+  appRoutes,
+  permissionCodes,
+  roleCodes,
+  type RoleCode,
+} from "@imobiliaria/shared";
+import {
   CalendarCheck2,
   FileSpreadsheet,
   FileText,
@@ -20,8 +24,60 @@ import { useAuth } from "@/features/auth/auth-context";
 import { useI18n } from "@/features/preferences/language-provider";
 import { cn } from "@/lib/cn";
 
+const roleMenus: Record<RoleCode, string[]> = {
+  [roleCodes.MASTER_ADMIN]: [
+    "dashboard",
+    "contacts",
+    "properties",
+    "sales",
+    "rents",
+    "visits",
+    "keys",
+    "maintenanceDashboard",
+    "contracts",
+    "users",
+    "access",
+    "settings",
+  ],
+  [roleCodes.USER_OPERACIONAL]: [
+    "dashboard",
+    "sales",
+    "rents",
+    "visits",
+    "keys",
+    "maintenanceTickets",
+    "contracts",
+    "properties",
+    "contacts",
+  ],
+  [roleCodes.BROKER]: [
+    "sales",
+    "rents",
+    "visits",
+    "properties",
+    "contacts",
+  ],
+  [roleCodes.RENT_ATTENDANT]: [
+    "rents",
+    "visits",
+    "keys",
+    "contracts",
+    "maintenanceTickets",
+    "properties",
+    "contacts",
+  ],
+  [roleCodes.MAINTENANCE_TEAM]: [
+    "maintenanceTickets",
+    "properties",
+    "contacts",
+    "contracts",
+  ],
+  [roleCodes.TENANT_PORTAL]: ["tenantPortal"],
+};
+
 const items = [
   {
+    id: "dashboard",
     section: "layout.sections.overview",
     label: "layout.menu.dashboard",
     to: appRoutes.dashboard,
@@ -29,6 +85,7 @@ const items = [
     permission: permissionCodes.DASHBOARD_READ,
   },
   {
+    id: "contacts",
     section: "layout.sections.registry",
     label: "layout.menu.contacts",
     to: appRoutes.contacts,
@@ -36,6 +93,7 @@ const items = [
     permission: permissionCodes.CONTACTS_READ,
   },
   {
+    id: "properties",
     section: "layout.sections.registry",
     label: "layout.menu.properties",
     to: appRoutes.properties,
@@ -43,20 +101,7 @@ const items = [
     permission: permissionCodes.PROPERTIES_READ,
   },
   {
-    section: "layout.sections.registry",
-    label: "layout.menu.owners",
-    to: appRoutes.owners,
-    icon: Building2,
-    permission: permissionCodes.OWNERS_READ,
-  },
-  {
-    section: "layout.sections.registry",
-    label: "layout.menu.tenants",
-    to: appRoutes.tenants,
-    icon: Users,
-    permission: permissionCodes.TENANTS_READ,
-  },
-  {
+    id: "sales",
     section: "layout.sections.operation",
     label: "layout.menu.sales",
     to: appRoutes.sales,
@@ -64,6 +109,7 @@ const items = [
     permission: permissionCodes.SALE_LEADS_READ,
   },
   {
+    id: "rents",
     section: "layout.sections.operation",
     label: "layout.menu.rents",
     to: appRoutes.rents,
@@ -71,6 +117,7 @@ const items = [
     permission: permissionCodes.RENT_LEADS_READ,
   },
   {
+    id: "visits",
     section: "layout.sections.operation",
     label: "layout.menu.visits",
     to: appRoutes.visits,
@@ -78,6 +125,7 @@ const items = [
     permission: permissionCodes.VISITS_READ,
   },
   {
+    id: "keys",
     section: "layout.sections.operation",
     label: "layout.menu.keys",
     to: appRoutes.keys,
@@ -85,6 +133,7 @@ const items = [
     permission: permissionCodes.KEYS_READ,
   },
   {
+    id: "maintenanceDashboard",
     section: "layout.sections.operation",
     label: "layout.menu.maintenance",
     to: appRoutes.maintenanceDashboard,
@@ -92,6 +141,15 @@ const items = [
     permission: permissionCodes.MAINTENANCE_READ,
   },
   {
+    id: "maintenanceTickets",
+    section: "layout.sections.operation",
+    label: "layout.menu.maintenanceTickets",
+    to: appRoutes.maintenanceTickets,
+    icon: Wrench,
+    permission: permissionCodes.MAINTENANCE_READ,
+  },
+  {
+    id: "contracts",
     section: "layout.sections.management",
     label: "layout.menu.contracts",
     to: appRoutes.contracts,
@@ -99,6 +157,7 @@ const items = [
     permission: permissionCodes.CONTRACTS_READ,
   },
   {
+    id: "users",
     section: "layout.sections.management",
     label: "layout.menu.users",
     to: appRoutes.users,
@@ -106,6 +165,7 @@ const items = [
     permission: permissionCodes.USERS_MANAGE,
   },
   {
+    id: "access",
     section: "layout.sections.management",
     label: "layout.menu.access",
     to: appRoutes.accessManagement,
@@ -113,6 +173,7 @@ const items = [
     permission: permissionCodes.ACCESS_MANAGE,
   },
   {
+    id: "settings",
     section: "layout.sections.management",
     label: "layout.menu.settings",
     to: appRoutes.settings,
@@ -120,6 +181,7 @@ const items = [
     permission: permissionCodes.PREFERENCES_MANAGE,
   },
   {
+    id: "tenantPortal",
     section: "layout.sections.tenant",
     label: "layout.menu.tenantPortal",
     to: appRoutes.tenantPortal,
@@ -128,13 +190,36 @@ const items = [
   },
 ] as const;
 
+function resolveVisibleMenuIds(roles: string[]) {
+  const normalizedRoles = roles.filter((role): role is RoleCode =>
+    Object.values(roleCodes).includes(role as RoleCode),
+  );
+
+  if (normalizedRoles.includes(roleCodes.MASTER_ADMIN)) {
+    return roleMenus[roleCodes.MASTER_ADMIN];
+  }
+
+  return Array.from(
+    new Set(normalizedRoles.flatMap((role) => roleMenus[role] ?? [])),
+  );
+}
+
 export function SidebarNav() {
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
   const { t } = useI18n();
   type NavItem = (typeof items)[number];
+  const visibleMenuIds = resolveVisibleMenuIds(user?.roles ?? []);
+  const visibleMenuOrder = new Map(
+    visibleMenuIds.map((itemId, index) => [itemId, index]),
+  );
 
   const groupedItems = items
-    .filter((item) => hasPermission(item.permission))
+    .filter((item) => visibleMenuOrder.has(item.id) && hasPermission(item.permission))
+    .sort(
+      (firstItem, secondItem) =>
+        (visibleMenuOrder.get(firstItem.id) ?? 0) -
+        (visibleMenuOrder.get(secondItem.id) ?? 0),
+    )
     .reduce<Record<string, NavItem[]>>((acc, item) => {
       const sectionItems = acc[item.section] ?? [];
       sectionItems.push(item);

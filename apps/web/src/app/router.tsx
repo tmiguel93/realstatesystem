@@ -52,7 +52,7 @@ function DefaultLanding() {
     return <Navigate to={appRoutes.login} replace />;
   }
 
-  return <Navigate to={resolveHomeRoute(user.permissions)} replace />;
+  return <Navigate to={resolveHomeRoute(user.permissions, user.roles)} replace />;
 }
 
 const router = createBrowserRouter([

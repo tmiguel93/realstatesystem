@@ -41,6 +41,7 @@ export function MaintenanceKanbanPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const deferredSearch = useDeferredValue(search);
+  const canWriteMaintenance = hasPermission(permissionCodes.MAINTENANCE_WRITE);
 
   const kanbanQuery = useQuery({
     queryKey: [
@@ -137,7 +138,7 @@ export function MaintenanceKanbanPage() {
         title="Kanban de manutencao"
         description="Visualize a fila por status, mantenha o fluxo em movimento e destaque rapidamente os tickets com maior urgencia."
         actions={
-          hasPermission(permissionCodes.MAINTENANCE_WRITE) ? (
+          canWriteMaintenance ? (
             <button
               type="button"
               onClick={() => navigate(appRoutes.maintenanceTicketNew)}
@@ -283,9 +284,12 @@ export function MaintenanceKanbanPage() {
                         key={ticket.id}
                         ticket={ticket}
                         footer={
-                          ["FINISHED", "CANCELLED"].includes(ticket.status) ? (
+                          ["FINISHED", "CANCELLED"].includes(ticket.status) ||
+                          !canWriteMaintenance ? (
                             <p className="text-xs text-ink-500">
-                              Este ticket ja esta encerrado. Reabertura e ajustes sensiveis sao feitos no detalhe.
+                              {canWriteMaintenance
+                                ? "Este ticket ja esta encerrado. Reabertura e ajustes sensiveis sao feitos no detalhe."
+                                : "Voce tem acesso de leitura. Movimentacoes sao feitas por usuarios autorizados."}
                             </p>
                           ) : (
                             <div className="space-y-3">

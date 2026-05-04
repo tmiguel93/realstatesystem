@@ -1,31 +1,73 @@
-import { appRoutes, permissionCodes } from "@imobiliaria/shared";
+import { appRoutes, permissionCodes, roleCodes } from "@imobiliaria/shared";
 
-export function resolveHomeRoute(permissions: string[]) {
-  if (permissions.includes(permissionCodes.DASHBOARD_READ)) {
+function hasPermission(permissions: string[], permission: string) {
+  return permissions.includes(permission);
+}
+
+function hasRole(roles: string[], role: string) {
+  return roles.includes(role);
+}
+
+export function resolveHomeRoute(permissions: string[], roles: string[] = []) {
+  if (
+    hasRole(roles, roleCodes.MASTER_ADMIN) &&
+    hasPermission(permissions, permissionCodes.DASHBOARD_READ)
+  ) {
     return appRoutes.dashboard;
   }
 
-  if (permissions.includes(permissionCodes.TENANT_PORTAL_ACCESS)) {
+  if (
+    hasRole(roles, roleCodes.USER_OPERACIONAL) &&
+    hasPermission(permissions, permissionCodes.DASHBOARD_READ)
+  ) {
+    return appRoutes.dashboard;
+  }
+
+  if (
+    hasRole(roles, roleCodes.TENANT_PORTAL) &&
+    hasPermission(permissions, permissionCodes.TENANT_PORTAL_ACCESS)
+  ) {
     return appRoutes.tenantPortal;
   }
 
-  if (permissions.includes(permissionCodes.MAINTENANCE_READ)) {
-    return appRoutes.maintenanceDashboard;
+  if (
+    hasRole(roles, roleCodes.MAINTENANCE_TEAM) &&
+    hasPermission(permissions, permissionCodes.MAINTENANCE_READ)
+  ) {
+    return appRoutes.maintenanceTickets;
   }
 
-  if (permissions.includes(permissionCodes.CONTRACTS_READ)) {
-    return appRoutes.contracts;
+  if (
+    hasRole(roles, roleCodes.RENT_ATTENDANT) &&
+    hasPermission(permissions, permissionCodes.RENT_LEADS_READ)
+  ) {
+    return appRoutes.rents;
   }
 
-  if (permissions.includes(permissionCodes.CONTACTS_READ)) {
-    return appRoutes.contacts;
-  }
-
-  if (permissions.includes(permissionCodes.PROPERTIES_READ)) {
+  if (
+    hasRole(roles, roleCodes.BROKER) &&
+    hasPermission(permissions, permissionCodes.PROPERTIES_READ)
+  ) {
     return appRoutes.properties;
   }
 
-  if (permissions.includes(permissionCodes.PREFERENCES_MANAGE)) {
+  if (hasPermission(permissions, permissionCodes.MAINTENANCE_READ)) {
+    return appRoutes.maintenanceTickets;
+  }
+
+  if (hasPermission(permissions, permissionCodes.CONTRACTS_READ)) {
+    return appRoutes.contracts;
+  }
+
+  if (hasPermission(permissions, permissionCodes.CONTACTS_READ)) {
+    return appRoutes.contacts;
+  }
+
+  if (hasPermission(permissions, permissionCodes.PROPERTIES_READ)) {
+    return appRoutes.properties;
+  }
+
+  if (hasPermission(permissions, permissionCodes.PREFERENCES_MANAGE)) {
     return appRoutes.settings;
   }
 
