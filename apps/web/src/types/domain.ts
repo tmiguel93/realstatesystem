@@ -202,6 +202,7 @@ export type PropertyListItem = {
   contractCount: number;
   visitCount: number;
   keyCount: number;
+  imageCount: number;
 };
 
 export type PropertyDetail = {
@@ -258,6 +259,7 @@ export type PropertyDetail = {
     contractCount: number;
     visitCount: number;
     keyCount: number;
+    imageCount: number;
     saleLeadCount: number;
     rentLeadCount: number;
     maintenanceTicketCount: number;
@@ -1167,7 +1169,11 @@ export type AppNotificationsResponse = {
 
 export type PaginatedOwners = PaginatedResponse<OwnerListItem>;
 export type PaginatedTenants = PaginatedResponse<TenantListItem>;
-export type PaginatedProperties = PaginatedResponse<PropertyListItem>;
+export type PaginatedProperties = PaginatedResponse<PropertyListItem> & {
+  summary: {
+    withoutImages: number;
+  };
+};
 export type PaginatedUsers = PaginatedResponse<UserListItem>;
 export type PaginatedSaleLeads = PaginatedResponse<SaleLeadListItem>;
 export type PaginatedRentLeads = PaginatedResponse<RentLeadListItem>;

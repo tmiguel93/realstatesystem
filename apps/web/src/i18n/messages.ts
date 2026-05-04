@@ -409,6 +409,13 @@ export const messages = {
       coverUpdated: "Foto de capa atualizada.",
       removedSuccess: "Foto removida da galeria.",
       reorderedSuccess: "Ordem da galeria atualizada.",
+      maxFilesError: "Selecione no máximo 10 fotos por envio.",
+      invalidTypeError: "Selecione apenas imagens JPEG, PNG ou WEBP.",
+      maxSizeError: "Cada foto deve ter no máximo 8 MB.",
+      selectedFilesSummary: "{count} foto(s) selecionada(s), total de {size}.",
+      noPermissionTitle: "Acesso às fotos não liberado",
+      noPermissionDescription:
+        "Seu perfil pode consultar o imóvel, mas não possui permissão para visualizar a galeria.",
       panelDescription:
         "Acompanhe a apresentação visual de {property}, defina a capa e mantenha a ordem comercial das fotos.",
     },
@@ -808,6 +815,13 @@ export const messages = {
       coverUpdated: "Cover photo updated.",
       removedSuccess: "Photo removed from gallery.",
       reorderedSuccess: "Gallery order updated.",
+      maxFilesError: "Select up to 10 photos per upload.",
+      invalidTypeError: "Select only JPEG, PNG or WEBP images.",
+      maxSizeError: "Each photo must be up to 8 MB.",
+      selectedFilesSummary: "{count} selected photo(s), {size} total.",
+      noPermissionTitle: "Photo access is not enabled",
+      noPermissionDescription:
+        "Your profile can view the property, but it cannot access the gallery.",
       panelDescription:
         "Follow the visual presentation of {property}, choose the cover image and keep the commercial order of the gallery.",
     },
@@ -1218,6 +1232,13 @@ export const messages = {
       coverUpdated: "Foto de portada actualizada.",
       removedSuccess: "Foto eliminada de la galería.",
       reorderedSuccess: "Orden de la galería actualizado.",
+      maxFilesError: "Selecciona hasta 10 fotos por carga.",
+      invalidTypeError: "Selecciona solo imágenes JPEG, PNG o WEBP.",
+      maxSizeError: "Cada foto debe tener como máximo 8 MB.",
+      selectedFilesSummary: "{count} foto(s) seleccionada(s), total de {size}.",
+      noPermissionTitle: "Acceso a fotos no habilitado",
+      noPermissionDescription:
+        "Tu perfil puede consultar el inmueble, pero no tiene permiso para ver la galería.",
       panelDescription:
         "Acompaña la presentación visual de {property}, define la portada y mantén el orden comercial de la galería.",
     },

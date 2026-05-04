@@ -15,6 +15,7 @@ type PropertiesListQuery = {
   purpose?: string;
   status?: string;
   city?: string;
+  withoutImages?: boolean;
 };
 
 type RequestContext = {
@@ -127,6 +128,7 @@ function mapPropertyBase(property: {
     contracts: number;
     visits: number;
     propertyKeys: number;
+    propertyImages: number;
   };
 }) {
   return {
@@ -150,6 +152,7 @@ function mapPropertyBase(property: {
     contractCount: property._count.contracts,
     visitCount: property._count.visits,
     keyCount: property._count.propertyKeys,
+    imageCount: property._count.propertyImages,
   };
 }
 
@@ -160,7 +163,7 @@ export class PropertiesService {
 
   async list(query: PropertiesListQuery) {
     const { page, pageSize, skip, take } = resolvePagination(query);
-    const where: Prisma.PropertyWhereInput = {
+    const baseWhere: Prisma.PropertyWhereInput = {
       ...(query.search
         ? {
             OR: [
@@ -178,8 +181,12 @@ export class PropertiesService {
         ? { city: { contains: query.city, mode: "insensitive" } }
         : {}),
     };
+    const where: Prisma.PropertyWhereInput = {
+      ...baseWhere,
+      ...(query.withoutImages ? { propertyImages: { none: {} } } : {}),
+    };
 
-    const [items, total] = await Promise.all([
+    const [items, total, withoutImages] = await Promise.all([
       prisma.property.findMany({
         where,
         skip,
@@ -205,16 +212,26 @@ export class PropertiesService {
               contracts: true,
               visits: true,
               propertyKeys: true,
+              propertyImages: true,
             },
           },
         },
       }),
       prisma.property.count({ where }),
+      prisma.property.count({
+        where: {
+          ...baseWhere,
+          propertyImages: { none: {} },
+        },
+      }),
     ]);
 
     return {
       data: items.map(mapPropertyBase),
       meta: buildPaginationMeta(total, page, pageSize),
+      summary: {
+        withoutImages,
+      },
     };
   }
 
@@ -266,6 +283,7 @@ export class PropertiesService {
               contracts: true,
               visits: true,
               propertyKeys: true,
+              propertyImages: true,
               saleLeads: true,
               rentLeads: true,
               maintenanceTickets: true,
@@ -431,6 +449,7 @@ export class PropertiesService {
         contractCount: property._count.contracts,
         visitCount: property._count.visits,
         keyCount: property._count.propertyKeys,
+        imageCount: property._count.propertyImages,
         saleLeadCount: property._count.saleLeads,
         rentLeadCount: property._count.rentLeads,
         maintenanceTicketCount: property._count.maintenanceTickets,
@@ -505,6 +524,10 @@ export class PropertiesService {
     return createdImages;
   }
 
+  async ensureImageUploadTarget(propertyId: string) {
+    await this.ensurePropertyExists(propertyId);
+  }
+
   async updateImage(
     propertyId: string,
     imageId: string,
@@ -520,6 +543,13 @@ export class PropertiesService {
 
     if (!existingImage) {
       throw new HttpError(404, "Imagem do imóvel não encontrada.");
+    }
+
+    if (payload.isCover === false && existingImage.isCover) {
+      throw new HttpError(
+        422,
+        "Defina outra foto como capa antes de remover a capa atual.",
+      );
     }
 
     const updatedImage = await prisma.$transaction(async (tx) => {
@@ -577,6 +607,10 @@ export class PropertiesService {
         422,
         "A reordenação deve considerar todas as imagens do imóvel.",
       );
+    }
+
+    if (new Set(imageIds).size !== imageIds.length) {
+      throw new HttpError(422, "A lista de imagens não pode conter repetições.");
     }
 
     const imageIdSet = new Set(images.map((image) => image.id));
@@ -694,6 +728,7 @@ export class PropertiesService {
               contracts: true,
               visits: true,
               propertyKeys: true,
+              propertyImages: true,
             },
           },
         },
@@ -735,6 +770,7 @@ export class PropertiesService {
               contracts: true,
               visits: true,
               propertyKeys: true,
+              propertyImages: true,
             },
           },
         },

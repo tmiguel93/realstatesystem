@@ -16,6 +16,7 @@ import { useAuth } from "@/features/auth/auth-context";
 import { PropertyFormDrawer } from "@/features/properties/property-form-drawer";
 import { resolveAssetUrl } from "@/lib/assets";
 import { buildDetailPath, formatCurrency } from "@/lib/format";
+import { getOptionLabel } from "@/lib/options";
 import { resolveStatusTone } from "@/lib/status";
 import { ownersService } from "@/services/owners-service";
 import { propertiesService } from "@/services/properties-service";
@@ -28,6 +29,7 @@ export function PropertiesPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [purposeFilter, setPurposeFilter] = useState("");
+  const [withoutImagesOnly, setWithoutImagesOnly] = useState(false);
   const [page, setPage] = useState(1);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<PropertyListItem | null>(
@@ -37,7 +39,14 @@ export function PropertiesPage() {
   const deferredSearch = useDeferredValue(search);
 
   const propertiesQuery = useQuery({
-    queryKey: ["properties", page, deferredSearch, statusFilter, purposeFilter],
+    queryKey: [
+      "properties",
+      page,
+      deferredSearch,
+      statusFilter,
+      purposeFilter,
+      withoutImagesOnly,
+    ],
     queryFn: () =>
       propertiesService.list({
         accessToken: accessToken!,
@@ -46,6 +55,7 @@ export function PropertiesPage() {
         search: deferredSearch || undefined,
         status: statusFilter || undefined,
         purpose: purposeFilter || undefined,
+        withoutImages: withoutImagesOnly || undefined,
       }),
     enabled: Boolean(accessToken),
   });
@@ -97,6 +107,7 @@ export function PropertiesPage() {
         ["RENTED", "SOLD"].includes(item.status),
       ).length,
       published: properties.filter((item) => item.isPublished).length,
+      withoutImages: propertiesQuery.data?.summary.withoutImages ?? 0,
     };
   }, [propertiesQuery.data]);
 
@@ -127,11 +138,12 @@ export function PropertiesPage() {
         }
       />
 
-      <div className="grid gap-5 md:grid-cols-3">
+      <div className="grid gap-5 md:grid-cols-4">
         {[
           { label: "Disponíveis", value: metrics.available },
           { label: "Alugados ou vendidos", value: metrics.rentedOrSold },
           { label: "Publicados", value: metrics.published },
+          { label: "Sem foto", value: metrics.withoutImages },
         ].map((item) => (
           <SectionCard key={item.label}>
             <p className="text-sm text-ink-500">{item.label}</p>
@@ -144,7 +156,7 @@ export function PropertiesPage() {
         title="Portfólio administrado"
         description="Liste ativos por finalidade, status comercial e contexto geográfico."
       >
-        <div className="mb-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px_220px]">
+        <div className="mb-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px_220px_auto]">
           <input
             value={search}
             onChange={(event) => {
@@ -184,6 +196,20 @@ export function PropertiesPage() {
               </option>
             ))}
           </select>
+          <button
+            type="button"
+            onClick={() => {
+              setWithoutImagesOnly((current) => !current);
+              setPage(1);
+            }}
+            className={
+              withoutImagesOnly
+                ? "primary-button justify-center"
+                : "secondary-button justify-center"
+            }
+          >
+            Somente sem foto
+          </button>
         </div>
 
         {propertiesQuery.data?.data.length ? (
@@ -227,16 +253,23 @@ export function PropertiesPage() {
                             <p className="text-sm text-ink-500">
                               {property.district}, {property.city}
                             </p>
+                            <p className="mt-1 text-xs text-ink-400">
+                              {property.imageCount > 0
+                                ? `${property.imageCount} foto(s)`
+                                : "Sem foto cadastrada"}
+                            </p>
                           </div>
                         </div>
                       </td>
                       <td className="text-sm text-ink-600">
                         {property.owner.fullName}
                       </td>
-                      <td className="text-sm text-ink-600">{property.purpose}</td>
+                      <td className="text-sm text-ink-600">
+                        {getOptionLabel(propertyPurposeOptions, property.purpose)}
+                      </td>
                       <td>
                         <StatusBadge
-                          label={property.status}
+                          label={getOptionLabel(propertyStatusOptions, property.status)}
                           tone={resolveStatusTone(property.status)}
                         />
                       </td>
@@ -287,19 +320,29 @@ export function PropertiesPage() {
           </div>
         ) : (
           <EmptyState
-            title="Nenhum imóvel encontrado"
-            description="Cadastre um ativo para organizar o portfólio comercial da imobiliária."
+            title={
+              withoutImagesOnly
+                ? "Nenhum imóvel sem foto"
+                : "Nenhum imóvel encontrado"
+            }
+            description={
+              withoutImagesOnly
+                ? "Todos os imóveis deste filtro já possuem fotos cadastradas."
+                : "Cadastre um ativo para organizar o portfólio comercial da imobiliária."
+            }
             action={
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedProperty(null);
-                  setDrawerOpen(true);
-                }}
-                className="primary-button"
-              >
-                Cadastrar imóvel
-              </button>
+              withoutImagesOnly ? undefined : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedProperty(null);
+                    setDrawerOpen(true);
+                  }}
+                  className="primary-button"
+                >
+                  Cadastrar imóvel
+                </button>
+              )
             }
           />
         )}

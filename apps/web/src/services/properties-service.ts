@@ -48,6 +48,7 @@ type PropertyListQuery = {
   purpose?: string;
   status?: string;
   city?: string;
+  withoutImages?: boolean;
 };
 
 const authHeader = (accessToken: string) => ({

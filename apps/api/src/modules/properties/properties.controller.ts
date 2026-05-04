@@ -10,6 +10,7 @@ import {
 import { PropertiesService } from "./properties.service";
 import { getRequestContext } from "../../shared/http/request-context";
 import { storageAdapter } from "../../shared/storage/local-storage-adapter";
+import type { StoredFile } from "../../shared/storage/storage-adapter";
 import { assertFilesPresent, validateImageFiles } from "../../shared/http/upload";
 
 const propertiesService = new PropertiesService();
@@ -57,23 +58,34 @@ export class PropertiesController {
     assertFilesPresent(files, "Envie ao menos uma foto do imóvel.");
     validateImageFiles(files, "Somente imagens JPEG, PNG ou WEBP são aceitas.");
 
-    const storedImages = await Promise.all(
-      files.map((file) =>
-        storageAdapter.saveFile({
+    await propertiesService.ensureImageUploadTarget(params.id);
+
+    const storedImages: StoredFile[] = [];
+
+    try {
+      for (const file of files) {
+        const storedImage = await storageAdapter.saveFile({
           folder: `properties/${params.id}`,
           originalName: file.originalname,
           mimeType: file.mimetype,
           buffer: file.buffer,
-        }),
-      ),
-    );
+        });
 
-    const result = await propertiesService.addImages(
-      params.id,
-      storedImages,
-      getRequestContext(request),
-    );
-    return response.status(201).json(result);
+        storedImages.push(storedImage);
+      }
+
+      const result = await propertiesService.addImages(
+        params.id,
+        storedImages,
+        getRequestContext(request),
+      );
+      return response.status(201).json(result);
+    } catch (error) {
+      await Promise.all(
+        storedImages.map((image) => storageAdapter.deleteFile(image.fileUrl)),
+      );
+      throw error;
+    }
   }
 
   async updateImage(request: Request, response: Response) {

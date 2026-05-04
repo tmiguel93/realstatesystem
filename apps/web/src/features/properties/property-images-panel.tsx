@@ -35,6 +35,18 @@ type PropertyImagesPanelProps = {
   canManage: boolean;
 };
 
+const MAX_PROPERTY_IMAGE_FILES = 10;
+const MAX_PROPERTY_IMAGE_SIZE_BYTES = 8 * 1024 * 1024;
+const ACCEPTED_PROPERTY_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
+function formatMegabytes(bytes: number) {
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
 export function PropertyImagesPanel({
   accessToken,
   propertyId,
@@ -45,6 +57,10 @@ export function PropertyImagesPanel({
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const selectedFilesSize = selectedFiles.reduce(
+    (total, file) => total + file.size,
+    0,
+  );
 
   const previews = useMemo(
     () =>
@@ -166,7 +182,33 @@ export function PropertyImagesPanel({
                 className="hidden"
                 onChange={(event) => {
                   const files = Array.from(event.target.files ?? []);
+                  const invalidFile = files.find(
+                    (file) => !ACCEPTED_PROPERTY_IMAGE_TYPES.has(file.type),
+                  );
+                  const oversizedFile = files.find(
+                    (file) => file.size > MAX_PROPERTY_IMAGE_SIZE_BYTES,
+                  );
+
+                  if (files.length > MAX_PROPERTY_IMAGE_FILES) {
+                    toast.error(t("propertyImages.maxFilesError"));
+                    event.target.value = "";
+                    return;
+                  }
+
+                  if (invalidFile) {
+                    toast.error(t("propertyImages.invalidTypeError"));
+                    event.target.value = "";
+                    return;
+                  }
+
+                  if (oversizedFile) {
+                    toast.error(t("propertyImages.maxSizeError"));
+                    event.target.value = "";
+                    return;
+                  }
+
                   setSelectedFiles(files);
+                  event.target.value = "";
                 }}
               />
             </label>
@@ -190,6 +232,13 @@ export function PropertyImagesPanel({
                     </p>
                   </div>
                 ))}
+              </div>
+
+              <div className="rounded-2xl bg-[var(--elevated-bg)] px-4 py-3 text-sm text-ink-500">
+                {t("propertyImages.selectedFilesSummary", {
+                  count: selectedFiles.length,
+                  size: formatMegabytes(selectedFilesSize),
+                })}
               </div>
 
               <div className="flex flex-wrap justify-end gap-3">
@@ -250,7 +299,8 @@ export function PropertyImagesPanel({
                     <button
                       type="button"
                       onClick={() => void coverMutation.mutateAsync(image.id)}
-                      className="secondary-button px-3 py-2 text-xs"
+                      disabled={image.isCover || coverMutation.isPending}
+                      className="secondary-button px-3 py-2 text-xs disabled:opacity-50"
                     >
                       <Star size={14} />
                       {t("propertyImages.makeCover")}
@@ -258,7 +308,7 @@ export function PropertyImagesPanel({
                     <button
                       type="button"
                       onClick={() => void moveImage(image.id, "left")}
-                      disabled={index === 0}
+                      disabled={index === 0 || reorderMutation.isPending}
                       className="secondary-button px-3 py-2 text-xs disabled:opacity-50"
                     >
                       <ArrowLeft size={14} />
@@ -266,7 +316,9 @@ export function PropertyImagesPanel({
                     <button
                       type="button"
                       onClick={() => void moveImage(image.id, "right")}
-                      disabled={index === images.length - 1}
+                      disabled={
+                        index === images.length - 1 || reorderMutation.isPending
+                      }
                       className="secondary-button px-3 py-2 text-xs disabled:opacity-50"
                     >
                       <ArrowRight size={14} />
@@ -274,7 +326,8 @@ export function PropertyImagesPanel({
                     <button
                       type="button"
                       onClick={() => void removeMutation.mutateAsync(image.id)}
-                      className="secondary-button px-3 py-2 text-xs text-rose-700"
+                      disabled={removeMutation.isPending}
+                      className="secondary-button px-3 py-2 text-xs text-rose-700 disabled:opacity-50"
                     >
                       <Trash2 size={14} />
                       {t("propertyImages.remove")}

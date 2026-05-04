@@ -33,6 +33,7 @@ import { PageHeader } from "@/components/feedback/page-header";
 import { SectionCard } from "@/components/feedback/section-card";
 import { StatusBadge } from "@/components/feedback/status-badge";
 import { useAuth } from "@/features/auth/auth-context";
+import { useI18n } from "@/features/preferences/language-provider";
 import { PropertyImagesPanel } from "@/features/properties/property-images-panel";
 import { PropertyFormDrawer } from "@/features/properties/property-form-drawer";
 import { resolveAssetUrl } from "@/lib/assets";
@@ -90,6 +91,7 @@ export function PropertyDetailPage() {
   const { propertyId = "" } = useParams();
   const queryClient = useQueryClient();
   const { accessToken, hasPermission } = useAuth();
+  const { t } = useI18n();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeSection, setActiveSection] =
     useState<Property360Section>("resumo");
@@ -221,6 +223,8 @@ export function PropertyDetailPage() {
 
   const canEditProperty = hasPermission(permissionCodes.PROPERTIES_WRITE);
   const canManageImages = hasPermission(permissionCodes.PROPERTY_IMAGES_WRITE);
+  const canReadImages =
+    canManageImages || hasPermission(permissionCodes.PROPERTY_IMAGES_READ);
   const canReadContracts = hasPermission(permissionCodes.CONTRACTS_READ);
   const canGenerateContracts = hasPermission(permissionCodes.CONTRACTS_GENERATE);
   const canReadKeys = hasPermission(permissionCodes.KEYS_READ);
@@ -357,11 +361,12 @@ export function PropertyDetailPage() {
         </div>
       </section>
 
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-6">
         {[
           { label: "Contratos", value: property.metrics.contractCount },
           { label: "Visitas", value: property.metrics.visitCount },
           { label: "Chaves", value: property.metrics.keyCount },
+          { label: "Fotos", value: property.metrics.imageCount },
           { label: "Chamados", value: property.metrics.maintenanceTicketCount },
           {
             label: "Leads",
@@ -447,13 +452,22 @@ export function PropertyDetailPage() {
       ) : null}
 
       {activeSection === "fotos" ? (
-        <PropertyImagesPanel
-          accessToken={accessToken!}
-          propertyId={property.id}
-          propertyTitle={property.title}
-          images={property.propertyImages}
-          canManage={canManageImages}
-        />
+        canReadImages ? (
+          <PropertyImagesPanel
+            accessToken={accessToken!}
+            propertyId={property.id}
+            propertyTitle={property.title}
+            images={property.propertyImages}
+            canManage={canManageImages}
+          />
+        ) : (
+          <SectionCard title={t("propertyImages.title")}>
+            <EmptyState
+              title={t("propertyImages.noPermissionTitle")}
+              description={t("propertyImages.noPermissionDescription")}
+            />
+          </SectionCard>
+        )
       ) : null}
 
       {activeSection === "operacao" ? (

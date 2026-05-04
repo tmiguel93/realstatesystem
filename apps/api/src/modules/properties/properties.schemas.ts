@@ -7,6 +7,22 @@ import {
 import { z } from "zod";
 
 const optionalString = z.string().trim().optional().nullable();
+const optionalBooleanQuery = z
+  .preprocess((value) => {
+    if (value === undefined || value === null || value === "") {
+      return undefined;
+    }
+
+    if (typeof value === "boolean") {
+      return value;
+    }
+
+    if (typeof value === "string") {
+      return value.toLowerCase() === "true";
+    }
+
+    return value;
+  }, z.boolean().optional());
 
 export const propertiesListQuerySchema = z.object({
   page: z.coerce.number().optional(),
@@ -16,6 +32,7 @@ export const propertiesListQuerySchema = z.object({
   purpose: z.nativeEnum(PropertyPurpose).optional(),
   status: z.nativeEnum(PropertyStatus).optional(),
   city: z.string().trim().optional(),
+  withoutImages: optionalBooleanQuery,
 });
 
 export const propertyPayloadSchema = z.object({
